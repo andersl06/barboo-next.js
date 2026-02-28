@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String   @id @default(uuid())
+  name               String
+  email              String   @unique
+  cpf                String?  @unique
+  phone              String?
+  gender             String?
+  passwordHash       String
+  avatarUrl          String?
+  status             UserStatus @default(ACTIVE)
+  mustChangePassword Boolean  @default(false)
+
+  memberships        BarbershopMembership[]
+  barberProfile      BarberProfile?
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Barbershop {
+  id                 String   @id @default(uuid())
+
+  name               String   @db.VarChar(150)
+  description        String?  @db.Text
+  phone              String?  @db.VarChar(20)
+
+  address            String?  @db.VarChar(220)
+  addressNumber      String?  @db.VarChar(20)
+  addressComplement  String?  @db.VarChar(120)
+  neighborhood       String?  @db.VarChar(150)
+  city               String?  @db.VarChar(120)
+  state              String?  @db.VarChar(5)
+  zipCode            String?  @db.VarChar(12)
+
+  slug               String?  @unique @db.VarChar(200)
+
+  logoUrl            String?  @db.Text
+  coverUrl           String?  @db.Text
+
+  status    BarbershopStatus @default(EM_CONFIGURACAO)
+
+  suspensionReason   String?  @db.Text
+  suspensionUntil    DateTime? @db.Date
+
+  cnpj               String?  @db.VarChar(20)
+  cpf                String?  @db.VarChar(20)
+
+  avgPrice           Decimal? @db.Decimal(10, 2)
+  avgTimeMinutes     Int?
+
+  facilities         String[]
+  paymentMethods     String[]
+
+  openingHours       Json?
+  socialLinks        Json?
+
+  latitude           Decimal? @db.Decimal(10, 7)
+  longitude          Decimal? @db.Decimal(10, 7)
+
+  memberships        BarbershopMembership[]
+
+  createdAt          DateTime @default(now())
+
+  @@map("barbershops")
+}
+
+
+model BarbershopMembership {
+  id            String   @id @default(uuid())
+  userId        String
+  barbershopId  String
+  role          MembershipRole
+  isActive      Boolean @default(true)
+
+  user          User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  barbershop    Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+
+  @@unique([userId, barbershopId])
+}
+
+model BarberProfile {
+  id        String @id @default(uuid())
+  userId    String @unique
+  nickname  String?
+  bio       String?
+  avatarUrl String?
+
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum MembershipRole {
+  OWNER
+  BARBER
+}
+
+enum BarbershopStatus {
+  EM_CONFIGURACAO
+  ATIVA
+  SUSPENSA
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
