@@ -1,5 +1,3 @@
-// /lib/membership/resolve-owner-barbershop.ts
-
 import { prisma } from "@/lib/db/prisma"
 
 export async function resolveOwnerBarbershopId(userId: string) {
