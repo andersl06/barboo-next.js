@@ -1,3 +1,5 @@
+// src/lib/errors/barbershop-errors.ts
+
 export type BarbershopField =
   | "name"
   | "description"
@@ -11,7 +13,7 @@ export type BarbershopField =
   | "city"
   | "state"
   | "zipCode"
-  | "slug";
+  | "slug"
 
 export type BarbershopErrorCode =
   | "REQUIRED"
@@ -24,7 +26,8 @@ export type BarbershopErrorCode =
   | "INVALID_ZIP"
   | "INVALID_CNPJ"
   | "DUPLICATE"
-  | "DOMAIN_RULE";
+  | "DOMAIN_RULE"
+  | "INTEGRATION"
 
 export const BARBERSHOP_ERRORS = {
   NAME_MIN: {
@@ -120,22 +123,59 @@ export const BARBERSHOP_ERRORS = {
     code: "INVALID_ZIP" as const,
     message: "CEP inválido (formato esperado 00000-000).",
   },
+  ZIP_NOT_FOUND: {
+    field: "zipCode" as const,
+    code: "INTEGRATION" as const,
+    message: "CEP não encontrado.",
+  },
+  ZIP_SERVICE_UNAVAILABLE: {
+    field: "zipCode" as const,
+    code: "INTEGRATION" as const,
+    message: "Serviço de CEP indisponível no momento.",
+  },
 
-  // Mantidos (opcionais no schema por enquanto)
   CNPJ_INVALID: {
     field: "cnpj" as const,
     code: "INVALID_CNPJ" as const,
     message: "CNPJ inválido.",
   },
+  CNPJ_NOT_FOUND: {
+    field: "cnpj" as const,
+    code: "INTEGRATION" as const,
+    message: "CNPJ não encontrado.",
+  },
+  CNPJ_INACTIVE: {
+    field: "cnpj" as const,
+    code: "INTEGRATION" as const,
+    message: "CNPJ encontrado, mas está inativo.",
+  },
+  CNPJ_SERVICE_UNAVAILABLE: {
+    field: "cnpj" as const,
+    code: "INTEGRATION" as const,
+    message: "Serviço de CNPJ indisponível no momento.",
+  },
+
   EMAIL_INVALID: {
     field: "email" as const,
     code: "INVALID_EMAIL" as const,
     message: "E-mail inválido.",
   },
-    OWNER_ALREADY_HAS_BARBERSHOP: {
+
+  OWNER_ALREADY_HAS_BARBERSHOP: {
     field: undefined,
-    code: "DOMAIN_RULE",
+    code: "DOMAIN_RULE" as const,
     message: "Este usuário já possui uma barbearia vinculada como OWNER.",
+  },
+
+  GEOCODING_NOT_FOUND: {
+    field: undefined,
+    code: "INTEGRATION" as const,
+    message: "Não foi possível geolocalizar o endereço informado.",
+  },
+  GEOCODING_SERVICE_UNAVAILABLE: {
+    field: undefined,
+    code: "INTEGRATION" as const,
+    message: "Serviço de geolocalização indisponível no momento.",
   },
 
   SLUG_ALREADY_EXISTS: {
@@ -144,22 +184,14 @@ export const BARBERSHOP_ERRORS = {
     message: "Essa URL já está em uso. Tente outra.",
   },
 
-  NAME_ALREADY_EXISTS: {
-    field: "name" as const,
-    code: "DUPLICATE" as const,
-    message: "Já existe uma barbearia cadastrada com esse nome.",
-  },
-
   CNPJ_ALREADY_EXISTS: {
     field: "cnpj" as const,
     code: "DUPLICATE" as const,
     message: "Já existe uma barbearia cadastrada com esse CNPJ.",
   },
-
   CPF_ALREADY_EXISTS: {
     field: "cpf" as const,
     code: "DUPLICATE" as const,
     message: "Já existe uma barbearia cadastrada com esse CPF.",
   },
-  
-} as const;
+} as const

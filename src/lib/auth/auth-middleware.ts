@@ -1,4 +1,4 @@
-import { verifyToken } from "@/lib/security/jwt"
+import { verifyToken, type JwtPayload } from "@/lib/security/jwt"
 import { prisma } from "@/lib/db/prisma"
 import { failure } from "@/lib/http/api-response"
 
@@ -12,7 +12,7 @@ export async function requireAuth(req: Request) {
   const token = authHeader.split(" ")[1]
 
   try {
-    const payload: any = verifyToken(token)
+    const payload: JwtPayload = verifyToken(token)
 
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },

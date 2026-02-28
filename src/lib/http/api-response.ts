@@ -1,6 +1,12 @@
+// src/lib/http/api-response.ts
 import { NextResponse } from "next/server"
 
-export function success(data: any, status = 200) {
+export type ApiErrorDetail = {
+  field?: string | number
+  message: string
+}
+
+export function success(data: unknown, status = 200) {
   return NextResponse.json(
     {
       success: true,
@@ -14,7 +20,7 @@ export function failure(
   code: string,
   message: string,
   status: number,
-  errors?: any[]
+  errors?: ApiErrorDetail[]
 ) {
   return NextResponse.json(
     {
