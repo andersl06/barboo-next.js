@@ -9,7 +9,7 @@ export const registerSchema = z.object({
     .length(11, "CPF deve conter 11 dígitos")
     .regex(/^\d+$/, "CPF deve conter apenas números")
     .refine(isValidCPF, {
-      message: "CPF inválido"
+      message: "CPF inválido",
     }),
   phone: z.string().min(10, "Telefone inválido"),
   password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
@@ -17,5 +17,19 @@ export const registerSchema = z.object({
 
 export const loginSchema = z.object({
   email: z.string().email("Email inválido"),
-  password: z.string().min(1, "Senha obrigatória")
+  password: z.string().min(1, "Senha obrigatória"),
 })
+
+export const changePasswordSchema = z
+  .object({
+    newPassword: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
+    confirmPassword: z.string().optional(),
+  })
+  .refine(
+    (data) =>
+      !data.confirmPassword || data.newPassword === data.confirmPassword,
+    {
+      path: ["confirmPassword"],
+      message: "Confirmação de senha não confere",
+    }
+  )

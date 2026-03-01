@@ -1,9 +1,14 @@
 import { prisma } from "@/lib/db/prisma"
-import { verifyToken, type JwtPayload } from "@/lib/security/jwt"
-import type { User } from "@prisma/client"
+import { verifyToken, JwtPayload } from "@/lib/security/jwt"
 
 export type AuthSuccess = {
-  user: User
+  user: {
+    id: string
+    name: string
+    email: string
+    status: string
+    mustChangePassword: boolean
+  }
 }
 
 export type AuthError = {
@@ -29,6 +34,10 @@ export async function requireAuth(req: Request): Promise<AuthResult> {
     payload = verifyToken(token)
   } catch {
     return { error: true, status: 401, message: "Token inválido ou expirado" }
+  }
+
+  if (payload.type && payload.type !== "access") {
+    return { error: true, status: 401, message: "Token inválido" }
   }
 
   const user = await prisma.user.findUnique({

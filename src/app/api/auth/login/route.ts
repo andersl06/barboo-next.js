@@ -4,7 +4,7 @@ import { AUTH_ERRORS } from "@/lib/errors/auth-errors"
 import { success, failure } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
 import { comparePassword } from "@/lib/security/bcrypt"
-import { generateToken } from "@/lib/security/jwt"
+import { generateTempToken, generateToken } from "@/lib/security/jwt"
 import { rateLimit } from "@/lib/security/rate-limit"
 import { loginSchema } from "@/lib/validators/auth"
 
@@ -73,9 +73,21 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    if (user.mustChangePassword) {
+      const tempToken = generateTempToken(user.id)
+
+      return success({
+        mustChangePassword: true,
+        tempToken,
+      })
+    }
+
     const token = generateToken(user.id)
 
-    return success({ token })
+    return success({
+      mustChangePassword: false,
+      token,
+    })
   } catch (err) {
     return handleError(err)
   }

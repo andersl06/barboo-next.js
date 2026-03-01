@@ -12,6 +12,16 @@ export const AUTH_ERRORS = {
   INVALID_CREDENTIALS: {
     field: undefined,
     code: "INVALID_CREDENTIALS" as const,
-    message: "Email ou senha inválidos",
+    message: "Credenciais inválidas",
+  },
+  TEMP_TOKEN_INVALID: {
+    field: undefined,
+    code: "UNAUTHORIZED" as const,
+    message: "Token temporário inválido ou expirado",
+  },
+  PASSWORD_CONFIRM_MISMATCH: {
+    field: "confirmPassword" as const,
+    code: "VALIDATION_ERROR" as const,
+    message: "Confirmação de senha não confere",
   },
 } as const
