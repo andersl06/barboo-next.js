@@ -145,6 +145,7 @@ export async function POST(req: Request) {
           city: payload.city,
           state: payload.state,
           zipCode: payload.zipCode,
+          openingHours: payload.openingHours,
           slug,
           cnpj: payload.cnpj,
           cpf: payload.cpf,

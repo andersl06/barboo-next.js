@@ -1,10 +1,23 @@
 import { z } from "zod";
 import { BARBERSHOP_ERRORS } from "../errors/barbershop-errors";
+import { SCHEDULE_ERRORS } from "../errors/schedule-errors";
 
 const UF_LIST = [
   "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG",
   "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO",
 ] as const;
+
+const WEEK_DAYS = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+] as const;
+
+const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 /**
  * Helpers
@@ -25,19 +38,58 @@ const optionalTrimmed = () =>
     .transform((v) => (v.length === 0 ? undefined : v))
     .optional();
 
+const dayOpeningSchema = z
+  .object({
+    enabled: z.boolean(),
+    start: z.string().optional(),
+    end: z.string().optional(),
+  })
+  .superRefine((day, ctx) => {
+    if (!day.enabled) return;
+
+    if (!day.start || !day.end) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: SCHEDULE_ERRORS.OPENING_HOURS_INVALID.message,
+      });
+      return;
+    }
+
+    if (!TIME_REGEX.test(day.start) || !TIME_REGEX.test(day.end)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: SCHEDULE_ERRORS.OPENING_HOURS_INVALID.message,
+      });
+      return;
+    }
+
+    if (day.end <= day.start) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: SCHEDULE_ERRORS.OPENING_HOURS_INVALID.message,
+      });
+    }
+  });
+
+const openingHoursSchema = z
+  .object(
+    Object.fromEntries(
+      WEEK_DAYS.map((day) => [day, dayOpeningSchema])
+    ) as Record<(typeof WEEK_DAYS)[number], typeof dayOpeningSchema>
+  )
+  .refine((value) => WEEK_DAYS.every((day) => day in value), {
+    message: SCHEDULE_ERRORS.OPENING_HOURS_INVALID.message,
+  });
+
 /**
- * CEP obrigatório:
- * - valida formato 00000-000 ou 00000000
- * - normaliza para só números
+ * CEP obrigatório
  */
 const zipCodeSchema = requiredTrimmed(BARBERSHOP_ERRORS.ZIP_REQUIRED.message)
   .refine((v) => /^\d{5}-?\d{3}$/.test(v), BARBERSHOP_ERRORS.ZIP_INVALID.message)
   .transform((v) => v.replace(/\D/g, ""));
 
 /**
- * Telefone obrigatório:
- * - valida formato BR (flexível)
- * - normaliza para só números
+ * Telefone obrigatório
  */
 const phoneSchema = requiredTrimmed(BARBERSHOP_ERRORS.PHONE_REQUIRED.message)
   .refine(
@@ -49,7 +101,7 @@ const phoneSchema = requiredTrimmed(BARBERSHOP_ERRORS.PHONE_REQUIRED.message)
   .transform((v) => v.replace(/\D/g, ""));
 
 /**
- * CNPJ (opcional) — valida DV + normaliza para números
+ * CNPJ opcional
  */
 function isValidCNPJ(raw: string): boolean {
   const cnpj = raw.replace(/\D/g, "");
@@ -57,7 +109,10 @@ function isValidCNPJ(raw: string): boolean {
   if (/^(\d)\1{13}$/.test(cnpj)) return false;
 
   const calcDV = (base: string, weights: number[]) => {
-    const sum = base.split("").reduce((acc, digit, idx) => acc + Number(digit) * weights[idx], 0);
+    const sum = base.split("").reduce(
+      (acc, digit, idx) => acc + Number(digit) * weights[idx],
+      0
+    );
     const mod = sum % 11;
     return mod < 2 ? 0 : 11 - mod;
   };
@@ -77,36 +132,23 @@ const cnpjSchema = optionalTrimmed()
   .refine((v) => (v ? isValidCNPJ(v) : true), BARBERSHOP_ERRORS.CNPJ_INVALID.message)
   .transform((v) => (v ? v.replace(/\D/g, "") : undefined));
 
-/**
- * CPF (opcional) — por enquanto só normaliza para números
- * (se quiser DV depois, a gente adiciona)
- */
-const cpfSchema = optionalTrimmed().transform((v) => (v ? v.replace(/\D/g, "") : undefined));
+const cpfSchema = optionalTrimmed().transform((v) =>
+  v ? v.replace(/\D/g, "") : undefined
+);
 
-/**
- * Email (opcional) — formato apenas
- */
 const emailSchema = optionalTrimmed().refine(
   (v) => (v ? z.string().email().safeParse(v).success : true),
   BARBERSHOP_ERRORS.EMAIL_INVALID.message
 );
 
-/**
- * Description (opcional)
- */
 const descriptionSchema = optionalTrimmed().refine(
   (v) => (v ? v.length <= 500 : true),
   BARBERSHOP_ERRORS.DESCRIPTION_MAX.message
 );
 
-/**
- * Slug (opcional) — só normaliza trim
- * (unicidade é no banco e mapeada via P2002)
- */
 const slugSchema = optionalTrimmed();
 
 export const barbershopCreateSchema = z.object({
-  // obrigatórios
   name: requiredTrimmed(BARBERSHOP_ERRORS.NAME_MIN.message)
     .pipe(minLen(3, BARBERSHOP_ERRORS.NAME_MIN.message))
     .pipe(maxLen(30, BARBERSHOP_ERRORS.NAME_MAX.message)),
@@ -117,13 +159,13 @@ export const barbershopCreateSchema = z.object({
     maxLen(120, BARBERSHOP_ERRORS.ADDRESS_MAX.message)
   ),
 
-  addressNumber: requiredTrimmed(BARBERSHOP_ERRORS.ADDRESS_NUMBER_REQUIRED.message).pipe(
-    maxLen(20, BARBERSHOP_ERRORS.ADDRESS_NUMBER_MAX.message)
-  ),
+  addressNumber: requiredTrimmed(
+    BARBERSHOP_ERRORS.ADDRESS_NUMBER_REQUIRED.message
+  ).pipe(maxLen(20, BARBERSHOP_ERRORS.ADDRESS_NUMBER_MAX.message)),
 
-  neighborhood: requiredTrimmed(BARBERSHOP_ERRORS.NEIGHBORHOOD_REQUIRED.message).pipe(
-    maxLen(60, BARBERSHOP_ERRORS.NEIGHBORHOOD_MAX.message)
-  ),
+  neighborhood: requiredTrimmed(
+    BARBERSHOP_ERRORS.NEIGHBORHOOD_REQUIRED.message
+  ).pipe(maxLen(60, BARBERSHOP_ERRORS.NEIGHBORHOOD_MAX.message)),
 
   city: requiredTrimmed(BARBERSHOP_ERRORS.CITY_REQUIRED.message).pipe(
     maxLen(60, BARBERSHOP_ERRORS.CITY_MAX.message)
@@ -131,11 +173,15 @@ export const barbershopCreateSchema = z.object({
 
   state: requiredTrimmed(BARBERSHOP_ERRORS.UF_REQUIRED.message)
     .transform((v) => v.toUpperCase())
-    .refine((v) => (UF_LIST as readonly string[]).includes(v), BARBERSHOP_ERRORS.UF_INVALID.message),
+    .refine(
+      (v) => (UF_LIST as readonly string[]).includes(v),
+      BARBERSHOP_ERRORS.UF_INVALID.message
+    ),
 
   zipCode: zipCodeSchema,
 
-  // opcionais
+  openingHours: openingHoursSchema,
+
   description: descriptionSchema,
   cnpj: cnpjSchema,
   cpf: cpfSchema,
@@ -156,12 +202,15 @@ export type ValidatorResult<T> =
       };
     };
 
-export function validateBarbershopCreate(payload: unknown): ValidatorResult<BarbershopCreateInput> {
+export function validateBarbershopCreate(
+  payload: unknown
+): ValidatorResult<BarbershopCreateInput> {
   const parsed = barbershopCreateSchema.safeParse(payload);
 
   if (parsed.success) return { success: true, data: parsed.data };
 
   const flattened = parsed.error.flatten();
+
   return {
     success: false,
     error: {

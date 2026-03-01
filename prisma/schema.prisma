@@ -21,6 +21,8 @@ model User {
 
   memberships        BarbershopMembership[]
   barberProfile      BarberProfile?
+  createdBlocks      BarberBlock[] @relation("CreatedBlocks")
+  barberBlocks       BarberBlock[] @relation("BarberUserBlocks")
 
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
@@ -67,12 +69,12 @@ model Barbershop {
   longitude          Decimal? @db.Decimal(10, 7)
 
   memberships        BarbershopMembership[]
+  barberBlocks       BarberBlock[]
 
   createdAt          DateTime @default(now())
 
   @@map("barbershops")
 }
-
 
 model BarbershopMembership {
   id            String   @id @default(uuid())
@@ -81,7 +83,7 @@ model BarbershopMembership {
   role          MembershipRole
   isActive      Boolean @default(true)
 
-  user          User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   barbershop    Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
 
   createdAt     DateTime @default(now())
@@ -90,13 +92,34 @@ model BarbershopMembership {
 }
 
 model BarberProfile {
-  id        String @id @default(uuid())
-  userId    String @unique
-  nickname  String?
-  bio       String?
-  avatarUrl String?
+  id              String @id @default(uuid())
+  userId          String @unique
+  nickname        String?
+  bio             String?
+  avatarUrl       String?
+  canManageBlocks Boolean @default(false)
 
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model BarberBlock {
+  id              String   @id @default(uuid())
+  barbershopId    String
+  barberUserId    String
+  date            DateTime @db.Date
+  startTime       String?  @db.VarChar(5)
+  endTime         String?  @db.VarChar(5)
+  allDay          Boolean  @default(false)
+  reason          String?  @db.VarChar(200)
+
+  createdByUserId String
+  createdAt       DateTime @default(now())
+
+  barbershop      Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+  barberUser      User       @relation("BarberUserBlocks", fields: [barberUserId], references: [id], onDelete: Cascade)
+  createdByUser   User       @relation("CreatedBlocks", fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  @@index([barbershopId, barberUserId, date])
 }
 
 enum MembershipRole {
