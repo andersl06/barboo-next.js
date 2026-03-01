@@ -1,6 +1,6 @@
 import { requireAuth } from "@/lib/auth/require-auth"
 import { ensureOwnerBarberProfile } from "@/lib/barbershop/ensureOwnerBarberProfile"
-import { requireBarbershopNotSuspended } from "@/lib/barbershop/requireBarbershopNotSuspended"
+import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"
 import { failure, success } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
 import { requireMembership } from "@/lib/membership/require-membership"
@@ -22,9 +22,9 @@ export async function POST(
       return failure("UNAUTHORIZED", auth.message, auth.status)
     }
 
-    const barbershopStatus = await requireBarbershopNotSuspended(barbershopId)
+    const barbershopStatus = await requireActiveBarbershop(barbershopId, { allowSetup: true })
 
-    if (!barbershopStatus.ok) {
+    if ("error" in barbershopStatus) {
       return failure(barbershopStatus.code, barbershopStatus.message, barbershopStatus.status)
     }
 

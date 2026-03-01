@@ -4,7 +4,7 @@ import { success, failure } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
 import { requireAuth } from "@/lib/auth/require-auth"
 import { requireMembership } from "@/lib/membership/require-membership"
-import { requireBarbershopNotSuspended } from "@/lib/barbershop/require-barbershop-not-suspended"
+import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"
 import { createBarberBlockSchema } from "@/lib/validators/barber-block"
 
 async function canManageBlocks(params: {
@@ -54,9 +54,9 @@ export async function POST(
       return failure("UNAUTHORIZED", auth.message, auth.status)
     }
 
-    const barbershopStatus = await requireBarbershopNotSuspended(barbershopId)
+    const barbershopStatus = await requireActiveBarbershop(barbershopId, { allowSetup: true })
 
-    if (!barbershopStatus.ok) {
+    if ("error" in barbershopStatus) {
       return failure(barbershopStatus.code, barbershopStatus.message, barbershopStatus.status)
     }
 
