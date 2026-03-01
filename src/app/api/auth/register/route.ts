@@ -1,55 +1,81 @@
+import { NextRequest } from "next/server"
 import { prisma } from "@/lib/db/prisma"
-import { hashPassword } from "@/lib/security/bcrypt"
-import { registerSchema } from "@/lib/validators/auth"
+import { AUTH_ERRORS } from "@/lib/errors/auth-errors"
 import { success, failure } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
+import { comparePassword } from "@/lib/security/bcrypt"
+import { generateToken } from "@/lib/security/jwt"
 import { rateLimit } from "@/lib/security/rate-limit"
+import { loginSchema } from "@/lib/validators/auth"
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const ip =
-      req.headers.get("x-forwarded-for") ||
-      req.headers.get("x-real-ip") ||
-      "unknown"
+    const body = await req.json()
 
-    if (!rateLimit(ip)) {
+    body.email = body.email?.trim().toLowerCase()
+
+    const parsed = loginSchema.safeParse(body)
+
+    if (!parsed.success) {
       return failure(
-        "RATE_LIMIT",
-        "Muitas requisições. Tente novamente.",
+        "VALIDATION_ERROR",
+        "Erro de validação",
+        400,
+        parsed.error.issues.map((issue) => ({
+          field:
+            typeof issue.path[0] === "string" ||
+            typeof issue.path[0] === "number"
+              ? issue.path[0]
+              : undefined,
+          message: issue.message,
+        }))
+      )
+    }
+
+    const { email, password } = parsed.data
+
+    const allowed = rateLimit(`login:${email}`, {
+      windowMs: 15 * 60 * 1000,
+      maxRequests: 5,
+      blockDurationMs: 15 * 60 * 1000,
+    })
+
+    if (!allowed) {
+      return failure(
+        "TOO_MANY_ATTEMPTS",
+        "Muitas tentativas. Tente novamente mais tarde.",
         429
       )
     }
 
-    const body = await req.json()
-
-    // Sanitização
-    body.email = body.email?.trim().toLowerCase()
-    body.name = body.name?.trim()
-    body.cpf = body.cpf?.replace(/\D/g, "")
-    body.phone = body.phone?.replace(/\D/g, "")
-
-    const data = registerSchema.parse(body)
-
-    const passwordHash = await hashPassword(data.password)
-
-    const user = await prisma.user.create({
-      data: {
-        name: data.name,
-        email: data.email,
-        cpf: data.cpf,
-        phone: data.phone,
-        passwordHash,
-      },
+    const user = await prisma.user.findUnique({
+      where: { email },
     })
 
-    return success(
-      {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      },
-      201
+    if (!user || user.status !== "ACTIVE") {
+      return failure(
+        AUTH_ERRORS.INVALID_CREDENTIALS.code,
+        AUTH_ERRORS.INVALID_CREDENTIALS.message,
+        401
+      )
+    }
+
+    const passwordMatch = await comparePassword(
+      password,
+      user.passwordHash
     )
+
+    if (!passwordMatch) {
+      return failure(
+        AUTH_ERRORS.INVALID_CREDENTIALS.code,
+        AUTH_ERRORS.INVALID_CREDENTIALS.message,
+        401
+      )
+    }
+
+    const token = generateToken(user.id)
+
+    return success({ token })
   } catch (err) {
     return handleError(err)
   }

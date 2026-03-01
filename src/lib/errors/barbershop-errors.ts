@@ -183,6 +183,11 @@ export const BARBERSHOP_ERRORS = {
     code: "DUPLICATE" as const,
     message: "Essa URL já está em uso. Tente outra.",
   },
+  SLUG_INVALID: {
+    field: "slug" as const,
+    code: "INVALID_FORMAT" as const,
+    message: "Slug inválido.",
+  },
 
   CNPJ_ALREADY_EXISTS: {
     field: "cnpj" as const,

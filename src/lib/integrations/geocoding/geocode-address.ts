@@ -29,50 +29,80 @@ type NominatimResponseItem = {
   lon: string
 }
 
-function buildQuery(input: GeocodeInput) {
-  return [
-    input.address,
-    input.addressNumber,
-    input.neighborhood,
-    input.city,
-    input.state,
-    "Brasil",
-    input.zipCode,
-  ]
-    .filter(Boolean)
-    .join(", ")
+function buildQuery(parts: Array<string | undefined>) {
+  return parts.filter(Boolean).join(", ")
+}
+
+async function geocodeQuery(query: string): Promise<GeocodeData | null> {
+  const encodedQuery = encodeURIComponent(query)
+
+  const response = await fetchJson<NominatimResponseItem[]>(
+    `https://nominatim.openstreetmap.org/search?q=${encodedQuery}&format=json&limit=1&countrycodes=br`,
+    {
+      headers: {
+        "User-Agent": process.env.GEOCODER_USER_AGENT ?? "barboo/0.1",
+      },
+    }
+  )
+
+  const first = response[0]
+
+  if (!first) {
+    return null
+  }
+
+  const latitude = Number(first.lat)
+  const longitude = Number(first.lon)
+
+  if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
+    return null
+  }
+
+  return { latitude, longitude }
 }
 
 export async function geocodeAddress(input: GeocodeInput): Promise<GeocodeResult> {
-  const query = encodeURIComponent(buildQuery(input))
+  const queries = [
+    buildQuery([
+      input.address,
+      input.addressNumber,
+      input.neighborhood,
+      input.city,
+      input.state,
+      "Brasil",
+      input.zipCode,
+    ]),
+    buildQuery([
+      input.address,
+      input.neighborhood,
+      input.city,
+      input.state,
+      "Brasil",
+      input.zipCode,
+    ]),
+    buildQuery([
+      input.address,
+      input.city,
+      input.state,
+      "Brasil",
+      input.zipCode,
+    ]),
+    buildQuery([input.zipCode, input.city, input.state, "Brasil"]),
+  ]
 
   try {
-    const response = await fetchJson<NominatimResponseItem[]>(
-      `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1&countrycodes=br`,
-      {
-        headers: {
-          "User-Agent": process.env.GEOCODER_USER_AGENT ?? "barboo/0.1",
-        },
+    for (const query of queries) {
+      const geocode = await geocodeQuery(query)
+
+      if (geocode) {
+        return {
+          ok: true,
+          data: geocode,
+        }
       }
-    )
-
-    const first = response[0]
-
-    if (!first) {
-      return { ok: false, error: BARBERSHOP_ERRORS.GEOCODING_NOT_FOUND }
     }
 
-    const latitude = Number(first.lat)
-    const longitude = Number(first.lon)
-
-    if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
-      return { ok: false, error: BARBERSHOP_ERRORS.GEOCODING_NOT_FOUND }
-    }
-
-    return {
-      ok: true,
-      data: { latitude, longitude },
-    }
+    return { ok: false, error: BARBERSHOP_ERRORS.GEOCODING_NOT_FOUND }
   } catch {
     return {
       ok: false,

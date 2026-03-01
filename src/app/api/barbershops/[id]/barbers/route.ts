@@ -4,60 +4,48 @@ import { success, failure } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
 import { requireAuth } from "@/lib/auth/require-auth"
 import { requireMembership } from "@/lib/membership/require-membership"
-import { registerSchema } from "@/lib/validators/auth"
+import { createBarberSchema } from "@/lib/validators/barber"
+import { requireBarbershopNotSuspended } from "@/lib/barbershop/requireBarbershopNotSuspended"
 
 export async function POST(
   req: Request,
-  { params }: { params: { id?: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // ✅ Validar ID da barbearia
-    const barbershopId = params?.id
+    const resolvedParams = await params
+    const barbershopId = resolvedParams?.id
 
     if (!barbershopId) {
       return failure("BAD_REQUEST", "ID da barbearia é obrigatório", 400)
     }
 
-    // ✅ Autenticação
     const auth = await requireAuth(req)
 
     if ("error" in auth) {
       return failure("UNAUTHORIZED", auth.message, auth.status)
     }
 
-    // ✅ Validação multi-tenant centralizada
-    const membership = await requireMembership(
-      auth.user,
-      barbershopId,
-      ["OWNER"] 
-    )
+    const barbershopStatus = await requireBarbershopNotSuspended(barbershopId)
+
+    if (!barbershopStatus.ok) {
+      return failure(
+        barbershopStatus.code,
+        barbershopStatus.message,
+        barbershopStatus.status
+      )
+    }
+
+    const membership = await requireMembership(auth.user, barbershopId, ["OWNER"])
 
     if ("error" in membership) {
       return failure("FORBIDDEN", membership.message, membership.status)
     }
 
     const body = await req.json()
-
-    // ✅ Sanitização
-    body.email = body.email?.trim().toLowerCase()
-    body.name = body.name?.trim()
-    body.cpf = body.cpf?.trim()
-    body.phone = body.phone?.trim()
-
-    const data = registerSchema.parse(body)
+    const data = createBarberSchema.parse(body)
 
     const passwordHash = await hashPassword(data.password)
 
-    // 🔒 Garantir que email não existe
-    const existingUser = await prisma.user.findUnique({
-      where: { email: data.email },
-    })
-
-    if (existingUser) {
-      return failure("CONFLICT", "Email já cadastrado", 409)
-    }
-
-    // ✅ Criar usuário barbeiro
     const newUser = await prisma.user.create({
       data: {
         name: data.name,
@@ -76,10 +64,18 @@ export async function POST(
           create: {},
         },
       },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
     })
 
     return success(
-      { message: "Barbeiro criado com sucesso" },
+      {
+        message: "Barbeiro criado com sucesso",
+        barber: newUser,
+      },
       201
     )
   } catch (err) {
