@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-  ],
+, "src/app/api/barbershops/categories.ts/route.ts"  ],
   "exclude": ["node_modules"]
 }

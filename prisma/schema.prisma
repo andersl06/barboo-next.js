@@ -50,7 +50,7 @@ model Barbershop {
 
   status             BarbershopStatus @default(EM_CONFIGURACAO)
 
-  suspensionReason   String?  @db.Text
+  suspensionReason   String?   @db.Text
   suspensionUntil    DateTime? @db.Date
 
   cnpj               String?  @unique @db.VarChar(20)
@@ -70,6 +70,8 @@ model Barbershop {
 
   memberships        BarbershopMembership[]
   barberBlocks       BarberBlock[]
+  categories         BarbershopCategory[]
+  services           BarbershopService[]
 
   createdAt          DateTime @default(now())
 
@@ -120,6 +122,43 @@ model BarberBlock {
   createdByUser   User       @relation("CreatedBlocks", fields: [createdByUserId], references: [id], onDelete: Cascade)
 
   @@index([barbershopId, barberUserId, date])
+}
+
+model BarbershopCategory {
+  id           String   @id @default(uuid())
+  barbershopId String
+  name         String   @db.VarChar(60)
+  description  String?  @db.VarChar(200)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  barbershop   Barbershop          @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+  services     BarbershopService[]
+
+  @@unique([barbershopId, name])
+  @@index([barbershopId, isActive])
+  @@map("barbershop_categories")
+}
+
+model BarbershopService {
+  id              String   @id @default(uuid())
+  barbershopId    String
+  categoryId      String?
+  name            String   @db.VarChar(80)
+  description     String?  @db.VarChar(500)
+  priceCents      Int
+  durationMinutes Int
+  isActive        Boolean  @default(true)
+  avgRating       Decimal? @db.Decimal(3, 2)
+  ratingCount     Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  barbershop      Barbershop          @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+  category        BarbershopCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@unique([barbershopId, name])
+  @@index([barbershopId, categoryId, isActive])
+  @@map("barbershop_services")
 }
 
 enum MembershipRole {
