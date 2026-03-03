@@ -97,11 +97,12 @@ model BarbershopMembership {
 }
 
 model BarberProfile {
-  id              String @id @default(uuid())
-  userId          String @unique
+  id              String  @id @default(uuid())
+  userId          String  @unique
   nickname        String?
-  bio             String?
-  avatarUrl       String?
+  bio             String? @db.VarChar(500)
+  avatarUrl       String? @db.Text
+  weeklySchedule  Json?
   canManageBlocks Boolean @default(false)
 
   user            User @relation(fields: [userId], references: [id], onDelete: Cascade)

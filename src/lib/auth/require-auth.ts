@@ -8,6 +8,8 @@ export type AuthSuccess = {
     email: string
     status: string
     mustChangePassword: boolean
+    onboardingIntent: string
+    onboardingStatus: string
   }
 }
 
@@ -42,6 +44,15 @@ export async function requireAuth(req: Request): Promise<AuthResult> {
 
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      status: true,
+      mustChangePassword: true,
+      onboardingIntent: true,
+      onboardingStatus: true,
+    },
   })
 
   if (!user) {
