@@ -166,6 +166,14 @@ export async function POST(req: Request) {
         },
       })
 
+      await tx.user.update({
+        where: { id: auth.user.id },
+        data: {
+          onboardingIntent: "OWNER",
+          onboardingStatus: "DONE",
+        },
+      })
+
       return barbershop
     })
 

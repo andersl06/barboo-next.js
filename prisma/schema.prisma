@@ -19,6 +19,9 @@ model User {
   status             UserStatus @default(ACTIVE)
   mustChangePassword Boolean  @default(false)
 
+  onboardingIntent   OnboardingIntent @default(CLIENT)
+  onboardingStatus   OnboardingStatus @default(DONE)
+
   memberships        BarbershopMembership[]
   barberProfile      BarberProfile?
   createdBlocks      BarberBlock[] @relation("CreatedBlocks")
@@ -175,4 +178,14 @@ enum BarbershopStatus {
 enum UserStatus {
   ACTIVE
   SUSPENDED
+}
+
+enum OnboardingIntent {
+  CLIENT
+  OWNER
+}
+
+enum OnboardingStatus {
+  PENDING
+  DONE
 }

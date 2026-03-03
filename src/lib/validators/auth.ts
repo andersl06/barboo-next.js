@@ -1,6 +1,8 @@
 import { z } from "zod"
 import { isValidCPF } from "./cpf"
 
+export const onboardingIntentSchema = z.enum(["CLIENT", "OWNER"])
+
 export const registerSchema = z.object({
   name: z.string().min(3, "Nome muito curto"),
   email: z.string().email("Email inválido"),
@@ -13,6 +15,7 @@ export const registerSchema = z.object({
     }),
   phone: z.string().min(10, "Telefone inválido"),
   password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
+  onboardingIntent: onboardingIntentSchema.optional().default("CLIENT"),
 })
 
 export const loginSchema = z.object({
