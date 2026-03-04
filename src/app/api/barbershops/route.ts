@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client"
 import { requireAuth } from "@/lib/auth/require-auth"
 import { prisma } from "@/lib/db/prisma"
 import { BARBERSHOP_ERRORS } from "@/lib/errors/barbershop-errors"
@@ -6,7 +7,6 @@ import { handleError } from "@/lib/http/error-handler"
 import { lookupCnpj } from "@/lib/integrations/cnpj/cnpj-lookup"
 import { geocodeAddress } from "@/lib/integrations/geocoding/geocode-address"
 import { lookupZip } from "@/lib/integrations/zip/zip-lookup"
-import { resolveOwnerBarbershopId } from "@/lib/membership/resolve-owner-barbershop"
 import { validateBarbershopCreate } from "@/lib/validators/barbershop"
 
 function slugify(input: string) {
@@ -26,6 +26,10 @@ function integrationStatus(code: string) {
   }
 
   return 400
+}
+
+function isOwnerConflictError(err: unknown) {
+  return err instanceof Error && err.message === "OWNER_BARBERSHOP_CONFLICT"
 }
 
 export async function POST(req: Request) {
@@ -49,16 +53,6 @@ export async function POST(req: Request) {
       )
 
       return failure(validated.error.message, "Erro de validação", 400, fieldErrors)
-    }
-
-    const ownerBarbershopId = await resolveOwnerBarbershopId(auth.user.id)
-
-    if (ownerBarbershopId) {
-      return failure(
-        BARBERSHOP_ERRORS.OWNER_ALREADY_HAS_BARBERSHOP.code,
-        BARBERSHOP_ERRORS.OWNER_ALREADY_HAS_BARBERSHOP.message,
-        409
-      )
     }
 
     const payload = validated.data
@@ -134,6 +128,21 @@ export async function POST(req: Request) {
     }
 
     const created = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${auth.user.id} FOR UPDATE`
+
+      const ownerMembership = await tx.barbershopMembership.findFirst({
+        where: {
+          userId: auth.user.id,
+          role: "OWNER",
+          isActive: true,
+        },
+        select: { id: true },
+      })
+
+      if (ownerMembership) {
+        throw new Error("OWNER_BARBERSHOP_CONFLICT")
+      }
+
       const barbershop = await tx.barbershop.create({
         data: {
           name: payload.name,
@@ -175,6 +184,8 @@ export async function POST(req: Request) {
       })
 
       return barbershop
+    }, {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
     })
 
     return success(
@@ -189,6 +200,14 @@ export async function POST(req: Request) {
       201
     )
   } catch (err) {
+    if (isOwnerConflictError(err)) {
+      return failure(
+        BARBERSHOP_ERRORS.OWNER_ALREADY_HAS_BARBERSHOP.code,
+        BARBERSHOP_ERRORS.OWNER_ALREADY_HAS_BARBERSHOP.message,
+        409
+      )
+    }
+
     return handleError(err)
   }
 }

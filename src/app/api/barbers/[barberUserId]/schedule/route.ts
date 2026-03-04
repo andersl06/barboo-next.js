@@ -1,6 +1,5 @@
-import { ensureBarberMembership } from "@/lib/barber/ensure-barber-membership"
-import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"
 import { requireAuth } from "@/lib/auth/require-auth"
+import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"
 import { prisma } from "@/lib/db/prisma"
 import { BARBER_PROFILE_ERRORS } from "@/lib/errors/barber-profile-errors"
 import { failure, success } from "@/lib/http/api-response"
@@ -10,10 +9,15 @@ import { updateBarberScheduleSchema } from "@/lib/validators/barber-schedule-upd
 
 export async function PUT(
   req: Request,
-  { params }: { params: Promise<{ id: string; barberUserId: string }> }
+  { params }: { params: Promise<{ barberUserId: string }> }
 ) {
   try {
-    const { id: barbershopId, barberUserId } = await params
+    const { barberUserId } = await params
+    const barbershopId = new URL(req.url).searchParams.get("barbershopId")
+
+    if (!barbershopId) {
+      return failure("BAD_REQUEST", "barbershopId e obrigatorio", 400)
+    }
 
     const auth = await requireAuth(req)
     if ("error" in auth) {
@@ -30,23 +34,65 @@ export async function PUT(
       return failure("FORBIDDEN", membership.message, membership.status)
     }
 
-    const targetMembership = await ensureBarberMembership(barbershopId, barberUserId)
-    if (!targetMembership) {
-      return failure("NOT_FOUND", "Barbeiro não encontrado na barbearia", 404)
+    const targetMembership = await prisma.barbershopMembership.findUnique({
+      where: {
+        userId_barbershopId: {
+          userId: barberUserId,
+          barbershopId,
+        },
+      },
+      select: {
+        isActive: true,
+        role: true,
+        user: {
+          select: {
+            barberProfile: {
+              select: { id: true },
+            },
+          },
+        },
+      },
+    })
+
+    const isAllowedTarget =
+      targetMembership !== null
+      && targetMembership.isActive
+      && (
+        targetMembership.role === "BARBER"
+        || (targetMembership.role === "OWNER" && targetMembership.user.barberProfile !== null)
+      )
+
+    if (!isAllowedTarget) {
+      return failure("NOT_FOUND", "Barbeiro nao encontrado na barbearia", 404)
     }
 
     const body = await req.json()
     const parsed = updateBarberScheduleSchema.safeParse(body)
     if (!parsed.success) {
-      return failure("VALIDATION_ERROR", "Erro de validação", 400, parsed.error.issues.map((issue) => ({
-        field: typeof issue.path[0] === "string" || typeof issue.path[0] === "number" ? issue.path[0] : undefined,
-        message: issue.message,
-      })))
+      return failure(
+        "VALIDATION_ERROR",
+        "Erro de validacao",
+        400,
+        parsed.error.issues.map((issue) => ({
+          field:
+            typeof issue.path[0] === "string" || typeof issue.path[0] === "number"
+              ? issue.path[0]
+              : undefined,
+          message: issue.message,
+        }))
+      )
     }
 
-    const profile = await prisma.barberProfile.findUnique({ where: { userId: barberUserId }, select: { id: true } })
+    const profile = await prisma.barberProfile.findUnique({
+      where: { userId: barberUserId },
+      select: { id: true },
+    })
     if (!profile) {
-      return failure(BARBER_PROFILE_ERRORS.BARBER_PROFILE_NOT_FOUND.code, BARBER_PROFILE_ERRORS.BARBER_PROFILE_NOT_FOUND.message, 404)
+      return failure(
+        BARBER_PROFILE_ERRORS.BARBER_PROFILE_NOT_FOUND.code,
+        BARBER_PROFILE_ERRORS.BARBER_PROFILE_NOT_FOUND.message,
+        404
+      )
     }
 
     const updated = await prisma.barberProfile.update({

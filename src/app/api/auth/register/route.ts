@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/db/prisma"
 import { AUTH_ERRORS } from "@/lib/errors/auth-errors"
 import { success, failure } from "@/lib/http/api-response"
+import { getClientIp } from "@/lib/http/client-ip"
 import { handleError } from "@/lib/http/error-handler"
 import { hashPassword } from "@/lib/security/bcrypt"
 import { rateLimit } from "@/lib/security/rate-limit"
@@ -23,10 +24,7 @@ function p2002Fields(err: Prisma.PrismaClientKnownRequestError): string[] {
 
 export async function POST(req: Request) {
   try {
-    const ip =
-      req.headers.get("x-forwarded-for") ||
-      req.headers.get("x-real-ip") ||
-      "unknown"
+    const ip = getClientIp(req)
 
     if (!rateLimit(ip)) {
       return failure(

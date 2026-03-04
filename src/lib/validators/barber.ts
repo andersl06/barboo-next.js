@@ -1,33 +1,36 @@
 import { z } from "zod"
 import { isValidCPF } from "./cpf"
 
-const requiredTrimmed = (msg: string) =>
-  z.string().transform((v) => v.trim()).refine((v) => v.length > 0, msg)
+const requiredTrimmed = (message: string) =>
+  z.string().transform((value) => value.trim()).refine((value) => value.length > 0, message)
+
+const optionalTrimmed = () =>
+  z
+    .string()
+    .transform((value) => value.trim())
+    .transform((value) => (value.length === 0 ? undefined : value))
+    .optional()
 
 export const createBarberSchema = z.object({
-  name: requiredTrimmed("Nome é obrigatório").pipe(
-    z.string().min(3, "Nome muito curto")
+  name: optionalTrimmed().refine(
+    (value) => (value ? value.length >= 3 : true),
+    "Nome muito curto"
   ),
-  email: requiredTrimmed("Email é obrigatório").pipe(
-    z.string().email("Email inválido")
+  email: requiredTrimmed("Email e obrigatorio").pipe(
+    z.string().email("Email invalido")
   ),
-  cpf: z
-    .string()
-    .transform((v) => v.replace(/\D/g, ""))
-    .pipe(
-      z
-        .string()
-        .length(11, "CPF deve conter 11 dígitos")
-        .regex(/^\d+$/, "CPF deve conter apenas números")
-        .refine(isValidCPF, {
-          message: "CPF inválido",
-        })
+  cpf: optionalTrimmed()
+    .transform((value) => (value ? value.replace(/\D/g, "") : undefined))
+    .refine(
+      (value) =>
+        !value
+        || (value.length === 11 && /^\d+$/.test(value) && isValidCPF(value)),
+      "CPF invalido"
     ),
-  phone: z
-    .string()
-    .transform((v) => v.replace(/\D/g, ""))
-    .pipe(z.string().min(10, "Telefone inválido")),
-  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
+  phone: optionalTrimmed()
+    .transform((value) => (value ? value.replace(/\D/g, "") : undefined))
+    .refine((value) => !value || value.length >= 10, "Telefone invalido"),
+  password: z.string().min(6, "Senha deve ter no minimo 6 caracteres"),
 })
 
 export type CreateBarberInput = z.infer<typeof createBarberSchema>

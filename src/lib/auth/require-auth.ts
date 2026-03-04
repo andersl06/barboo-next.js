@@ -10,6 +10,9 @@ export type AuthSuccess = {
     mustChangePassword: boolean
     onboardingIntent: string
     onboardingStatus: string
+    clientLatitude: number | null
+    clientLongitude: number | null
+    clientLocationUpdatedAt: Date | null
   }
 }
 
@@ -52,6 +55,9 @@ export async function requireAuth(req: Request): Promise<AuthResult> {
       mustChangePassword: true,
       onboardingIntent: true,
       onboardingStatus: true,
+      clientLatitude: true,
+      clientLongitude: true,
+      clientLocationUpdatedAt: true,
     },
   })
 
@@ -71,5 +77,14 @@ export async function requireAuth(req: Request): Promise<AuthResult> {
     }
   }
 
-  return { user }
+  return {
+    user: {
+      ...user,
+      clientLatitude:
+        user.clientLatitude !== null ? Number(user.clientLatitude) : null,
+      clientLongitude:
+        user.clientLongitude !== null ? Number(user.clientLongitude) : null,
+      clientLocationUpdatedAt: user.clientLocationUpdatedAt,
+    },
+  }
 }

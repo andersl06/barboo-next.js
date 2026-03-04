@@ -2,6 +2,7 @@ import { NextRequest } from "next/server"
 import { prisma } from "@/lib/db/prisma"
 import { AUTH_ERRORS } from "@/lib/errors/auth-errors"
 import { success, failure } from "@/lib/http/api-response"
+import { getClientIp } from "@/lib/http/client-ip"
 import { handleError } from "@/lib/http/error-handler"
 import { comparePassword } from "@/lib/security/bcrypt"
 import { generateTempToken, generateToken } from "@/lib/security/jwt"
@@ -33,8 +34,9 @@ export async function POST(req: NextRequest) {
     }
 
     const { email, password } = parsed.data
+    const ip = getClientIp(req)
 
-    const allowed = rateLimit(`login:${email}`, {
+    const allowed = rateLimit(`login:${email}:${ip}`, {
       windowMs: 15 * 60 * 1000,
       maxRequests: 5,
       blockDurationMs: 15 * 60 * 1000,

@@ -1,34 +1,11 @@
+import { canManageBlocks } from "@/lib/barber/can-manage-blocks"
+import { requireAuth } from "@/lib/auth/require-auth"
+import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"
 import { prisma } from "@/lib/db/prisma"
 import { SCHEDULE_ERRORS } from "@/lib/errors/schedule-errors"
 import { success, failure } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
-import { requireAuth } from "@/lib/auth/require-auth"
 import { requireMembership } from "@/lib/membership/require-membership"
-
-async function canManageBlocks(params: {
-  actorUserId: string
-  actorRole: "OWNER" | "BARBER"
-  barberUserId: string
-}) {
-  if (params.actorRole === "OWNER") {
-    return { ok: true as const }
-  }
-
-  if (params.actorUserId !== params.barberUserId) {
-    return { ok: false as const, status: 403, error: SCHEDULE_ERRORS.BARBER_CANNOT_MANAGE_BLOCKS }
-  }
-
-  const profile = await prisma.barberProfile.findUnique({
-    where: { userId: params.actorUserId },
-    select: { canManageBlocks: true },
-  })
-
-  if (!profile?.canManageBlocks) {
-    return { ok: false as const, status: 403, error: SCHEDULE_ERRORS.BARBER_CANNOT_MANAGE_BLOCKS }
-  }
-
-  return { ok: true as const }
-}
 
 export async function DELETE(
   req: Request,
@@ -38,13 +15,16 @@ export async function DELETE(
     const { id: barbershopId, barberUserId, blockId } = await params
 
     const auth = await requireAuth(req)
-
     if ("error" in auth) {
       return failure("UNAUTHORIZED", auth.message, auth.status)
     }
 
-    const membership = await requireMembership(auth.user, barbershopId, ["OWNER", "BARBER"])
+    const barbershopStatus = await requireActiveBarbershop(barbershopId, { allowSetup: true })
+    if ("error" in barbershopStatus) {
+      return failure(barbershopStatus.code, barbershopStatus.message, barbershopStatus.status)
+    }
 
+    const membership = await requireMembership(auth.user, barbershopId, ["OWNER", "BARBER"])
     if ("error" in membership) {
       return failure("FORBIDDEN", membership.message, membership.status)
     }
@@ -52,6 +32,7 @@ export async function DELETE(
     const permission = await canManageBlocks({
       actorUserId: auth.user.id,
       actorRole: membership.role,
+      barbershopId,
       barberUserId,
     })
 

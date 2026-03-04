@@ -63,6 +63,9 @@ export async function GET(req: Request) {
       ownerBarbershopId,
       barbershopStatus,
       onboardingPending,
+      hasClientLocation:
+        auth.user.clientLatitude !== null && auth.user.clientLongitude !== null,
+      clientLocationUpdatedAt: auth.user.clientLocationUpdatedAt,
     })
   } catch (err) {
     return handleError(err)

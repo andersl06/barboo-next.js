@@ -2,6 +2,22 @@ const requests = new Map<
   string,
   { count: number; last: number; blockedUntil?: number }
 >()
+const MAX_ENTRIES = 10_000
+
+function cleanup(now: number, windowMs: number) {
+  if (requests.size < MAX_ENTRIES) {
+    return
+  }
+
+  for (const [key, entry] of requests.entries()) {
+    const isWindowExpired = now - entry.last > windowMs
+    const isBlockExpired = !entry.blockedUntil || now >= entry.blockedUntil
+
+    if (isWindowExpired && isBlockExpired) {
+      requests.delete(key)
+    }
+  }
+}
 
 export function rateLimit(
   key: string,
@@ -16,6 +32,8 @@ export function rateLimit(
   const windowMs = options?.windowMs ?? 60 * 1000
   const maxRequests = options?.maxRequests ?? 10
   const blockDurationMs = options?.blockDurationMs ?? 0
+
+  cleanup(now, windowMs)
 
   const entry = requests.get(key)
 

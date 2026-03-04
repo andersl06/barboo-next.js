@@ -13,10 +13,15 @@ const MAX_SIZE = 2 * 1024 * 1024
 
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ id: string; barberUserId: string }> }
+  { params }: { params: Promise<{ barberUserId: string }> }
 ) {
   try {
-    const { id: barbershopId, barberUserId } = await params
+    const { barberUserId } = await params
+    const barbershopId = new URL(req.url).searchParams.get("barbershopId")
+
+    if (!barbershopId) {
+      return failure("BAD_REQUEST", "barbershopId e obrigatorio", 400)
+    }
 
     const auth = await requireAuth(req)
     if ("error" in auth) {
@@ -35,36 +40,58 @@ export async function POST(
 
     const targetMembership = await ensureBarberMembership(barbershopId, barberUserId)
     if (!targetMembership) {
-      return failure("NOT_FOUND", "Barbeiro não encontrado na barbearia", 404)
+      return failure("NOT_FOUND", "Barbeiro nao encontrado na barbearia", 404)
     }
 
-    const profile = await prisma.barberProfile.findUnique({ where: { userId: barberUserId }, select: { id: true } })
+    const profile = await prisma.barberProfile.findUnique({
+      where: { userId: barberUserId },
+      select: { id: true },
+    })
     if (!profile) {
-      return failure(BARBER_PROFILE_ERRORS.BARBER_PROFILE_NOT_FOUND.code, BARBER_PROFILE_ERRORS.BARBER_PROFILE_NOT_FOUND.message, 404)
+      return failure(
+        BARBER_PROFILE_ERRORS.BARBER_PROFILE_NOT_FOUND.code,
+        BARBER_PROFILE_ERRORS.BARBER_PROFILE_NOT_FOUND.message,
+        404
+      )
     }
 
     const formData = await req.formData()
     const file = formData.get("file")
 
     if (!(file instanceof File)) {
-      return failure(BARBER_PROFILE_ERRORS.AVATAR_REQUIRED.code, BARBER_PROFILE_ERRORS.AVATAR_REQUIRED.message, 400, [{
-        field: BARBER_PROFILE_ERRORS.AVATAR_REQUIRED.field,
-        message: BARBER_PROFILE_ERRORS.AVATAR_REQUIRED.message,
-      }])
+      return failure(
+        BARBER_PROFILE_ERRORS.AVATAR_REQUIRED.code,
+        BARBER_PROFILE_ERRORS.AVATAR_REQUIRED.message,
+        400,
+        [{
+          field: BARBER_PROFILE_ERRORS.AVATAR_REQUIRED.field,
+          message: BARBER_PROFILE_ERRORS.AVATAR_REQUIRED.message,
+        }]
+      )
     }
 
     if (!ACCEPTED_TYPES.has(file.type)) {
-      return failure(BARBER_PROFILE_ERRORS.AVATAR_INVALID_TYPE.code, BARBER_PROFILE_ERRORS.AVATAR_INVALID_TYPE.message, 400, [{
-        field: BARBER_PROFILE_ERRORS.AVATAR_INVALID_TYPE.field,
-        message: BARBER_PROFILE_ERRORS.AVATAR_INVALID_TYPE.message,
-      }])
+      return failure(
+        BARBER_PROFILE_ERRORS.AVATAR_INVALID_TYPE.code,
+        BARBER_PROFILE_ERRORS.AVATAR_INVALID_TYPE.message,
+        400,
+        [{
+          field: BARBER_PROFILE_ERRORS.AVATAR_INVALID_TYPE.field,
+          message: BARBER_PROFILE_ERRORS.AVATAR_INVALID_TYPE.message,
+        }]
+      )
     }
 
     if (file.size > MAX_SIZE) {
-      return failure(BARBER_PROFILE_ERRORS.AVATAR_TOO_LARGE.code, `${BARBER_PROFILE_ERRORS.AVATAR_TOO_LARGE.message} Limite: 2MB.`, 400, [{
-        field: BARBER_PROFILE_ERRORS.AVATAR_TOO_LARGE.field,
-        message: `${BARBER_PROFILE_ERRORS.AVATAR_TOO_LARGE.message} Limite: 2MB.`,
-      }])
+      return failure(
+        BARBER_PROFILE_ERRORS.AVATAR_TOO_LARGE.code,
+        `${BARBER_PROFILE_ERRORS.AVATAR_TOO_LARGE.message} Limite: 2MB.`,
+        400,
+        [{
+          field: BARBER_PROFILE_ERRORS.AVATAR_TOO_LARGE.field,
+          message: `${BARBER_PROFILE_ERRORS.AVATAR_TOO_LARGE.message} Limite: 2MB.`,
+        }]
+      )
     }
 
     const upload = await uploadBarberAvatar({
@@ -85,11 +112,19 @@ export async function POST(
     return success(updated)
   } catch (err) {
     if (err instanceof Error && err.message === "STORAGE_UNAVAILABLE") {
-      return failure(BARBER_PROFILE_ERRORS.STORAGE_UNAVAILABLE.code, BARBER_PROFILE_ERRORS.STORAGE_UNAVAILABLE.message, 503)
+      return failure(
+        BARBER_PROFILE_ERRORS.STORAGE_UNAVAILABLE.code,
+        BARBER_PROFILE_ERRORS.STORAGE_UNAVAILABLE.message,
+        503
+      )
     }
 
     if (err instanceof Error && err.message === "AVATAR_INVALID_TYPE") {
-      return failure(BARBER_PROFILE_ERRORS.AVATAR_INVALID_TYPE.code, BARBER_PROFILE_ERRORS.AVATAR_INVALID_TYPE.message, 400)
+      return failure(
+        BARBER_PROFILE_ERRORS.AVATAR_INVALID_TYPE.code,
+        BARBER_PROFILE_ERRORS.AVATAR_INVALID_TYPE.message,
+        400
+      )
     }
 
     return handleError(err)

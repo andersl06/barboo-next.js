@@ -4,6 +4,7 @@ import { requireAuth } from "@/lib/auth/require-auth"
 import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"
 import { requireMembership } from "@/lib/membership/require-membership"
 import { failure, success } from "@/lib/http/api-response"
+import { getClientIp } from "@/lib/http/client-ip"
 import { handleError } from "@/lib/http/error-handler"
 import { rateLimit } from "@/lib/security/rate-limit"
 import { CATALOG_ERRORS } from "@/lib/errors/catalog-errors"
@@ -23,7 +24,7 @@ export async function POST(
 ) {
   try {
     const { id: barbershopId } = await params
-    const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown"
+    const ip = getClientIp(req)
     const allowed = rateLimit("catalog:services:" + barbershopId + ":" + ip, { windowMs: 60 * 1000, maxRequests: 60 })
 
     if (!allowed) {
@@ -119,7 +120,7 @@ export async function GET(
 ) {
   try {
     const { id: barbershopId } = await params
-    const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown"
+    const ip = getClientIp(req)
     const allowed = rateLimit("catalog:services:read" + ":" + barbershopId + ":" + ip, { windowMs: 60 * 1000, maxRequests: 120 })
 
     if (!allowed) {

@@ -22,6 +22,10 @@ model User {
   onboardingIntent   OnboardingIntent @default(CLIENT)
   onboardingStatus   OnboardingStatus @default(DONE)
 
+  clientLatitude           Decimal?  @db.Decimal(10, 7)
+  clientLongitude          Decimal?  @db.Decimal(10, 7)
+  clientLocationUpdatedAt  DateTime?
+
   memberships        BarbershopMembership[]
   barberProfile      BarberProfile?
   createdBlocks      BarberBlock[] @relation("CreatedBlocks")
@@ -87,6 +91,7 @@ model BarbershopMembership {
   barbershopId  String
   role          MembershipRole
   isActive      Boolean @default(true)
+  canManageBlocks Boolean @default(false)
 
   user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   barbershop    Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
