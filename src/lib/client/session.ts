@@ -14,6 +14,7 @@ type MeContextData = {
   }
   effectiveRole: "OWNER" | "BARBER" | "CLIENT"
   ownerBarbershopId: string | null
+  barberBarbershopId: string | null
   barbershopStatus: string | null
   onboardingPending: boolean
   hasClientLocation: boolean
@@ -51,6 +52,10 @@ export function setTempToken(token: string) {
 
 export function clearTempToken() {
   window.localStorage.removeItem(TEMP_TOKEN_KEY)
+}
+
+export function getTempToken() {
+  return window.localStorage.getItem(TEMP_TOKEN_KEY)
 }
 
 export async function fetchMeContext(token: string): Promise<ApiResult<MeContextData>> {

@@ -20,12 +20,11 @@ export const metadata: Metadata = {
   description: "Barboo - Conectando barbeiros e clientes",
   icons: {
     icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.ico", sizes: "256x256", type: "image/png" },
     ],
     shortcut: ["/favicon.ico"],
     apple: [
-      { url: "/favicon.ico", sizes: "180x180", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "180x180", type: "image/png" },
     ],
   },
 }

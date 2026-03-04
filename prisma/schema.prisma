@@ -30,6 +30,9 @@ model User {
   barberProfile      BarberProfile?
   createdBlocks      BarberBlock[] @relation("CreatedBlocks")
   barberBlocks       BarberBlock[] @relation("BarberUserBlocks")
+  clientAppointments BarbershopAppointment[] @relation("ClientAppointments")
+  barberAppointments BarbershopAppointment[] @relation("BarberAppointments")
+  canceledAppointments BarbershopAppointment[] @relation("CanceledByUser")
 
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
@@ -79,6 +82,7 @@ model Barbershop {
   barberBlocks       BarberBlock[]
   categories         BarbershopCategory[]
   services           BarbershopService[]
+  appointments       BarbershopAppointment[]
 
   createdAt          DateTime @default(now())
 
@@ -164,10 +168,41 @@ model BarbershopService {
 
   barbershop      Barbershop          @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
   category        BarbershopCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  appointments    BarbershopAppointment[]
 
   @@unique([barbershopId, name])
   @@index([barbershopId, categoryId, isActive])
   @@map("barbershop_services")
+}
+
+model BarbershopAppointment {
+  id               String            @id @default(uuid())
+  barbershopId     String
+  serviceId        String
+  clientUserId     String
+  barberUserId     String
+  startAt          DateTime
+  endAt            DateTime
+  status           AppointmentStatus @default(PENDING)
+  confirmedAt      DateTime?
+  canceledAt       DateTime?
+  canceledByUserId String?
+  cancelReason     String?           @db.VarChar(300)
+  rejectedAt       DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  barbershop       Barbershop        @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+  service          BarbershopService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  clientUser       User              @relation("ClientAppointments", fields: [clientUserId], references: [id], onDelete: Cascade)
+  barberUser       User              @relation("BarberAppointments", fields: [barberUserId], references: [id], onDelete: Cascade)
+  canceledByUser   User?             @relation("CanceledByUser", fields: [canceledByUserId], references: [id], onDelete: SetNull)
+
+  @@index([barbershopId, startAt])
+  @@index([barberUserId, startAt])
+  @@index([clientUserId, startAt])
+  @@index([status, startAt])
+  @@map("barbershop_appointments")
 }
 
 enum MembershipRole {
@@ -194,4 +229,11 @@ enum OnboardingIntent {
 enum OnboardingStatus {
   PENDING
   DONE
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELED
+  REJECTED
 }

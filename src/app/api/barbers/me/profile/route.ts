@@ -5,6 +5,37 @@ import { failure, success } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
 import { updateBarberProfileSchema } from "@/lib/validators/barber-profile-update"
 
+export async function GET(req: Request) {
+  try {
+    const auth = await requireAuth(req)
+    if ("error" in auth) {
+      return failure("UNAUTHORIZED", auth.message, auth.status)
+    }
+
+    const profile = await prisma.barberProfile.findUnique({
+      where: { userId: auth.user.id },
+      select: {
+        userId: true,
+        bio: true,
+        avatarUrl: true,
+        weeklySchedule: true,
+      },
+    })
+
+    if (!profile) {
+      return failure(
+        BARBER_PROFILE_ERRORS.BARBER_PROFILE_NOT_FOUND.code,
+        BARBER_PROFILE_ERRORS.BARBER_PROFILE_NOT_FOUND.message,
+        404
+      )
+    }
+
+    return success(profile)
+  } catch (err) {
+    return handleError(err)
+  }
+}
+
 export async function PATCH(req: Request) {
   try {
     const auth = await requireAuth(req)

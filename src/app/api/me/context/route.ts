@@ -25,16 +25,19 @@ export async function GET(req: Request) {
       },
     })
 
-    const barberMembership = ownerMembership
-      ? null
-      : await prisma.barbershopMembership.findFirst({
-          where: {
-            userId: auth.user.id,
-            role: "BARBER",
-            isActive: true,
-          },
-          select: { barbershopId: true },
-        })
+    const barberMembership = await prisma.barbershopMembership.findFirst({
+      where: {
+        userId: auth.user.id,
+        role: "BARBER",
+        isActive: true,
+      },
+      select: {
+        barbershopId: true,
+        barbershop: {
+          select: { status: true },
+        },
+      },
+    })
 
     const effectiveRole = ownerMembership
       ? "OWNER"
@@ -43,7 +46,8 @@ export async function GET(req: Request) {
         : "CLIENT"
 
     const ownerBarbershopId = ownerMembership?.barbershopId ?? null
-    const barbershopStatus = ownerMembership?.barbershop.status ?? null
+    const barberBarbershopId = barberMembership?.barbershopId ?? null
+    const barbershopStatus = ownerMembership?.barbershop.status ?? barberMembership?.barbershop.status ?? null
 
     const onboardingPending =
       auth.user.onboardingIntent === "OWNER"
@@ -61,6 +65,7 @@ export async function GET(req: Request) {
       },
       effectiveRole,
       ownerBarbershopId,
+      barberBarbershopId,
       barbershopStatus,
       onboardingPending,
       hasClientLocation:

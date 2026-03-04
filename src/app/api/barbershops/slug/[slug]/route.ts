@@ -72,8 +72,18 @@ export async function GET(
         },
         memberships: {
           where: {
-            role: "BARBER",
             isActive: true,
+            OR: [
+              { role: "BARBER" },
+              {
+                role: "OWNER",
+                user: {
+                  barberProfile: {
+                    isNot: null,
+                  },
+                },
+              },
+            ],
           },
           select: {
             userId: true,

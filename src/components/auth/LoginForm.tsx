@@ -137,7 +137,7 @@ export function LoginForm({ registered = false, nextPath }: LoginFormProps) {
 
       if (result.data.mustChangePassword && result.data.tempToken) {
         setTempToken(result.data.tempToken)
-        setError("Voce precisa alterar a senha antes de continuar.")
+        router.push("/barber/change-password")
         return
       }
 
@@ -176,6 +176,11 @@ export function LoginForm({ registered = false, nextPath }: LoginFormProps) {
           }
 
           router.push("/cliente/barbearias-proximas")
+          return
+        }
+
+        if (context.data.effectiveRole === "BARBER") {
+          router.push("/barber/dashboard")
           return
         }
       }

@@ -5,17 +5,13 @@ import Link from "next/link"
 import type { ReactNode } from "react"
 import { PremiumBackground } from "@/components/background"
 
-export const OWNER_NAV_ITEMS = [
-  { href: "/owner/dashboard", label: "Dashboard" },
-  { href: "/owner/barbershop/edit", label: "Barbearia" },
-  { href: "/owner/categories", label: "Categorias" },
-  { href: "/owner/services", label: "Servicos" },
-  { href: "/owner/team", label: "Equipe" },
-  { href: "/owner/availability", label: "Agenda" },
-  { href: "/owner/finance", label: "Financeiro" },
+const BARBER_NAV_ITEMS = [
+  { href: "/barber/dashboard", label: "Dashboard" },
+  { href: "/barber/agenda", label: "Agenda" },
+  { href: "/barber/edit", label: "Perfil" },
 ] as const
 
-type OwnerShellProps = {
+type BarberShellProps = {
   title: string
   subtitle?: string
   activePath: string
@@ -24,14 +20,14 @@ type OwnerShellProps = {
   children: ReactNode
 }
 
-export function OwnerShell({
+export function BarberShell({
   title,
   subtitle,
   activePath,
   statusLabel,
   hideNavigation = false,
   children,
-}: OwnerShellProps) {
+}: BarberShellProps) {
   void statusLabel
 
   return (
@@ -63,8 +59,8 @@ export function OwnerShell({
         </div>
 
         {!hideNavigation ? (
-          <nav className="mt-5 grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-7">
-            {OWNER_NAV_ITEMS.map((item) => {
+          <nav className="mt-5 grid grid-cols-3 gap-2 md:grid-cols-3">
+            {BARBER_NAV_ITEMS.map((item) => {
               const isActive = activePath === item.href
               return (
                 <Link
