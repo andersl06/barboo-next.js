@@ -20,7 +20,7 @@ export async function GET(req: Request) {
       select: {
         barbershopId: true,
         barbershop: {
-          select: { status: true },
+          select: { status: true, slug: true },
         },
       },
     })
@@ -46,6 +46,7 @@ export async function GET(req: Request) {
         : "CLIENT"
 
     const ownerBarbershopId = ownerMembership?.barbershopId ?? null
+    const ownerBarbershopSlug = ownerMembership?.barbershop.slug ?? null
     const barberBarbershopId = barberMembership?.barbershopId ?? null
     const barbershopStatus = ownerMembership?.barbershop.status ?? barberMembership?.barbershop.status ?? null
 
@@ -65,6 +66,7 @@ export async function GET(req: Request) {
       },
       effectiveRole,
       ownerBarbershopId,
+      ownerBarbershopSlug,
       barberBarbershopId,
       barbershopStatus,
       onboardingPending,

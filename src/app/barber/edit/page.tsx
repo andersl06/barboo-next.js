@@ -22,6 +22,8 @@ type ApiResult<T> = { success: true; data: T } | ApiFailure
 
 type BarberProfileData = {
   userId: string
+  name: string
+  phone: string | null
   bio: string | null
   avatarUrl: string | null
   weeklySchedule: unknown
@@ -47,6 +49,20 @@ function getBusinessDateToday() {
 
 function resolveError(result: ApiFailure, fallback: string) {
   return result.errors?.[0]?.message ?? result.message ?? fallback
+}
+
+function onlyDigits(value: string) {
+  return value.replace(/\D/g, "")
+}
+
+function formatPhone(value: string) {
+  const digits = onlyDigits(value).slice(0, 11)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+  if (digits.length <= 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`
+  }
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
 }
 
 function getInitials(name: string) {
@@ -80,7 +96,11 @@ export default function BarberEditPage() {
   const [success, setSuccess] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
+  const [name, setName] = useState("")
+  const [phone, setPhone] = useState("")
   const [bio, setBio] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
 
@@ -122,6 +142,8 @@ export default function BarberEditPage() {
         return
       }
 
+      setName(profileResult.data.name)
+      setPhone(formatPhone(profileResult.data.phone ?? ""))
       setBio(profileResult.data.bio ?? "")
       setAvatarUrl(profileResult.data.avatarUrl ?? null)
 
@@ -160,7 +182,13 @@ export default function BarberEditPage() {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ bio }),
+        body: JSON.stringify({
+          name,
+          phone,
+          bio,
+          newPassword: newPassword.trim().length > 0 ? newPassword : undefined,
+          confirmPassword: confirmPassword.trim().length > 0 ? confirmPassword : undefined,
+        }),
       })
 
       const profileResult = (await profileResponse.json()) as ApiResult<BarberProfileData>
@@ -192,6 +220,8 @@ export default function BarberEditPage() {
       }
 
       setSuccess("Perfil atualizado com sucesso.")
+      setNewPassword("")
+      setConfirmPassword("")
     } catch {
       setError("Falha de conexao ao atualizar perfil.")
     } finally {
@@ -340,6 +370,26 @@ export default function BarberEditPage() {
             </div>
 
             <label className="block">
+              <span className="mb-1 block text-sm text-[#b8c3e6]">Nome</span>
+              <input
+                className="w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-base text-[#f4f6ff] outline-none transition placeholder:text-[#8796c5] focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                required
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-1 block text-sm text-[#b8c3e6]">Telefone</span>
+              <input
+                className="w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-base text-[#f4f6ff] outline-none transition placeholder:text-[#8796c5] focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
+                value={phone}
+                onChange={(event) => setPhone(formatPhone(event.target.value))}
+                placeholder="(11) 99999-0000"
+              />
+            </label>
+
+            <label className="block">
               <span className="mb-1 block text-sm text-[#b8c3e6]">Bio</span>
               <textarea
                 className="min-h-[120px] w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-sm text-[#f4f6ff] outline-none transition placeholder:text-[#8796c5] focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
@@ -349,6 +399,29 @@ export default function BarberEditPage() {
                 placeholder="Descreva seu estilo, especialidades e experiencia."
               />
             </label>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1 block text-sm text-[#b8c3e6]">Nova senha (opcional)</span>
+                <input
+                  type="password"
+                  className="w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-base text-[#f4f6ff] outline-none transition placeholder:text-[#8796c5] focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
+                  value={newPassword}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                  minLength={6}
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-[#b8c3e6]">Confirmar nova senha</span>
+                <input
+                  type="password"
+                  className="w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-base text-[#f4f6ff] outline-none transition placeholder:text-[#8796c5] focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  minLength={6}
+                />
+              </label>
+            </div>
 
             <UIButton
               type="submit"
@@ -477,4 +550,3 @@ export default function BarberEditPage() {
     </BarberShell>
   )
 }
-

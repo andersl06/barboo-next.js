@@ -5,12 +5,6 @@ import Link from "next/link"
 import type { ReactNode } from "react"
 import { PremiumBackground } from "@/components/background"
 
-const BARBER_NAV_ITEMS = [
-  { href: "/barber/dashboard", label: "Dashboard" },
-  { href: "/barber/agenda", label: "Agenda" },
-  { href: "/barber/edit", label: "Perfil" },
-] as const
-
 type BarberShellProps = {
   title: string
   subtitle?: string
@@ -28,7 +22,9 @@ export function BarberShell({
   hideNavigation = false,
   children,
 }: BarberShellProps) {
+  void activePath
   void statusLabel
+  void hideNavigation
 
   return (
     <main className="relative min-h-[100svh] overflow-hidden bg-[#070B16] px-4 py-8 text-[#f1f2f7] md:px-8 md:py-12">
@@ -49,7 +45,7 @@ export function BarberShell({
                 aria-label="Voltar para pagina inicial"
                 className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-[#0b1330]/70 text-lg text-[#d8e3ff] transition hover:bg-white/10"
               >
-                ←
+                {"<"}
               </Link>
             </div>
             <h1 className="mt-4 text-2xl font-bold tracking-tight md:text-3xl">{title}</h1>
@@ -57,27 +53,6 @@ export function BarberShell({
           </div>
           <div />
         </div>
-
-        {!hideNavigation ? (
-          <nav className="mt-5 grid grid-cols-3 gap-2 md:grid-cols-3">
-            {BARBER_NAV_ITEMS.map((item) => {
-              const isActive = activePath === item.href
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`rounded-xl border px-3 py-2 text-center text-sm font-medium transition ${
-                    isActive
-                      ? "border-[#f36c20]/60 bg-[#f36c20]/20 text-[#ffe4d6]"
-                      : "border-white/10 bg-[#0b1330]/70 text-[#c7d2f4] hover:border-white/25 hover:bg-[#121d48]"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              )
-            })}
-          </nav>
-        ) : null}
 
         <div className="mt-5">{children}</div>
       </section>
