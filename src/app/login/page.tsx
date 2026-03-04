@@ -27,7 +27,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <div className="relative z-10">
             <div className="mb-8 flex justify-center">
               <Image
-                src="/assets/brand/barboo_logo.svg"
+                src="/assets/brand/barboo_logo.png"
                 alt="Barboo"
                 width={360}
                 height={100}

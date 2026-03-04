@@ -39,7 +39,7 @@ export function OwnerShell({
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
             <Image
-              src="/assets/brand/barboo_logo.svg"
+              src="/assets/brand/barboo_logo.png"
               alt="Barboo"
               width={250}
               height={70}

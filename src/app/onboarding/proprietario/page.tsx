@@ -825,7 +825,7 @@ export default function OnboardingProprietarioPage() {
       <Wrapper>
         <section className="rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(20,24,54,0.9)_0%,rgba(13,17,41,0.94)_100%)] p-6 text-center shadow-[0_30px_80px_rgba(0,0,0,0.6)]">
           <Image
-            src="/assets/brand/barboo_logo.svg"
+            src="/assets/brand/barboo_logo.png"
             alt="Barboo"
             width={230}
             height={70}
@@ -851,7 +851,7 @@ export default function OnboardingProprietarioPage() {
       <Wrapper>
         <section className="rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(20,24,54,0.9)_0%,rgba(13,17,41,0.94)_100%)] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.6)]">
           <Image
-            src="/assets/brand/barboo_logo.svg"
+            src="/assets/brand/barboo_logo.png"
             alt="Barboo"
             width={230}
             height={70}
@@ -874,7 +874,7 @@ export default function OnboardingProprietarioPage() {
     <Wrapper>
       <section className="rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(20,24,54,0.9)_0%,rgba(13,17,41,0.94)_100%)] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.6)]">
         <Image
-          src="/assets/brand/barboo_logo.svg"
+          src="/assets/brand/barboo_logo.png"
           alt="Barboo"
           width={250}
           height={70}

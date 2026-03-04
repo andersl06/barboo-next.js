@@ -24,7 +24,7 @@ export function AuthContainer({ title, subtitle, children }: AuthContainerProps)
             <div className="flex items-start justify-between gap-3">
               <Link href="/" className="inline-flex">
                 <Image
-                  src="/assets/brand/barboo_logo.svg"
+                  src="/assets/brand/barboo_logo.png"
                   alt="Barboo"
                   width={280}
                   height={82}

@@ -30,14 +30,14 @@ export function FeatureCard({
 
       <div className="relative z-10 flex h-full flex-col">
         <header className="flex items-center gap-4 border-b border-white/10 pb-4">
-          <div className="relative h-16 w-16 shrink-0 md:h-[72px] md:w-[72px]">
+          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl md:h-[72px] md:w-[72px]">
             {iconSrc ? (
               <Image
                 src={iconSrc}
                 alt=""
                 fill
                 sizes="72px"
-                className="object-contain drop-shadow-[0_10px_22px_rgba(0,0,0,0.45)] scale-[1.8] md:scale-[2.0]"
+                className="object-cover object-center drop-shadow-[0_10px_22px_rgba(0,0,0,0.45)]"
               />
             ) : (
               <div className="h-full w-full rounded-xl bg-white/10" />

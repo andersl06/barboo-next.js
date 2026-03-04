@@ -15,7 +15,7 @@ export default function Home() {
         </div>
 
         <HeroHeading
-          logoSrc="/assets/brand/barboo_logo.svg"
+          logoSrc="/assets/brand/barboo_logo.png"
           logoAlt="Barboo"
           titleStart="Conectando"
           highlight="barbeiros"
