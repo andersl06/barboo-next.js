@@ -74,8 +74,10 @@ export async function PATCH(req: Request) {
 
     return success({
       hasLocation: true,
-      latitude: updated.clientLatitude ? Number(updated.clientLatitude) : null,
-      longitude: updated.clientLongitude ? Number(updated.clientLongitude) : null,
+      latitude:
+        updated.clientLatitude !== null ? Number(updated.clientLatitude) : null,
+      longitude:
+        updated.clientLongitude !== null ? Number(updated.clientLongitude) : null,
       updatedAt: updated.clientLocationUpdatedAt,
     })
   } catch (err) {

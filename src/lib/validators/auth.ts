@@ -40,3 +40,18 @@ export const changePasswordSchema = z
       message: "Confirmacao de senha nao confere",
     }
   )
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Email invalido"),
+})
+
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().trim().min(32, "Token invalido"),
+    password: z.string().min(6, "Senha deve ter no minimo 6 caracteres"),
+    confirmPassword: z.string().optional(),
+  })
+  .refine((data) => !data.confirmPassword || data.password === data.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Confirmacao de senha nao confere",
+  })

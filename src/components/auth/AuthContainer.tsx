@@ -21,7 +21,7 @@ export function AuthContainer({ title, subtitle, children }: AuthContainerProps)
           <div className="pointer-events-none absolute -bottom-10 -left-20 h-40 w-[140%] rotate-[-26deg] bg-[linear-gradient(90deg,rgba(37,95,224,0)_0%,rgba(62,119,245,0.4)_50%,rgba(37,95,224,0)_100%)]" />
 
           <div className="relative z-10">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start">
               <Link href="/" className="inline-flex">
                 <Image
                   src="/assets/brand/barboo_logo.png"
@@ -31,13 +31,6 @@ export function AuthContainer({ title, subtitle, children }: AuthContainerProps)
                   priority
                   className="h-auto w-[190px] md:w-[230px]"
                 />
-              </Link>
-
-              <Link
-                href="/"
-                className="rounded-full border border-white/15 px-3 py-1 text-xs font-medium text-[#a7b2d7] transition hover:text-white"
-              >
-                Voltar
               </Link>
             </div>
 

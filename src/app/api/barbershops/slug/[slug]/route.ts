@@ -94,7 +94,6 @@ export async function GET(
                   select: {
                     bio: true,
                     avatarUrl: true,
-                    weeklySchedule: true,
                   },
                 },
               },
@@ -141,7 +140,6 @@ export async function GET(
         name: membership.user.name,
         bio: membership.user.barberProfile?.bio ?? null,
         avatarUrl: membership.user.barberProfile?.avatarUrl ?? null,
-        weeklySchedule: membership.user.barberProfile?.weeklySchedule ?? null,
       })),
     })
   } catch (err) {

@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server"
+import { setAccessSessionCookies, setTempSessionCookies } from "@/lib/auth/session-cookies"
 import { prisma } from "@/lib/db/prisma"
 import { AUTH_ERRORS } from "@/lib/errors/auth-errors"
-import { success, failure } from "@/lib/http/api-response"
+import { failure, success } from "@/lib/http/api-response"
 import { getClientIp } from "@/lib/http/client-ip"
 import { handleError } from "@/lib/http/error-handler"
 import { comparePassword } from "@/lib/security/bcrypt"
@@ -12,20 +13,17 @@ import { loginSchema } from "@/lib/validators/auth"
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-
     body.email = body.email?.trim().toLowerCase()
 
     const parsed = loginSchema.safeParse(body)
-
     if (!parsed.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de validação",
+        "Erro de validacao",
         400,
         parsed.error.issues.map((issue) => ({
           field:
-            typeof issue.path[0] === "string" ||
-            typeof issue.path[0] === "number"
+            typeof issue.path[0] === "string" || typeof issue.path[0] === "number"
               ? issue.path[0]
               : undefined,
           message: issue.message,
@@ -62,11 +60,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const passwordMatch = await comparePassword(
-      password,
-      user.passwordHash
-    )
-
+    const passwordMatch = await comparePassword(password, user.passwordHash)
     if (!passwordMatch) {
       return failure(
         AUTH_ERRORS.INVALID_CREDENTIALS.code,
@@ -77,19 +71,15 @@ export async function POST(req: NextRequest) {
 
     if (user.mustChangePassword) {
       const tempToken = generateTempToken(user.id)
-
-      return success({
-        mustChangePassword: true,
-        tempToken,
-      })
+      const response = success({ mustChangePassword: true })
+      setTempSessionCookies(response, tempToken)
+      return response
     }
 
     const token = generateToken(user.id)
-
-    return success({
-      mustChangePassword: false,
-      token,
-    })
+    const response = success({ mustChangePassword: false })
+    setAccessSessionCookies(response, token)
+    return response
   } catch (err) {
     return handleError(err)
   }

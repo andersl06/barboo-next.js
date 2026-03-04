@@ -1,5 +1,6 @@
+import { ACCESS_TOKEN_COOKIE, readCookie } from "@/lib/auth/session-cookies"
 import { prisma } from "@/lib/db/prisma"
-import { verifyToken, JwtPayload } from "@/lib/security/jwt"
+import { JwtPayload, verifyToken } from "@/lib/security/jwt"
 
 export type AuthSuccess = {
   user: {
@@ -24,25 +25,43 @@ export type AuthError = {
 
 export type AuthResult = AuthSuccess | AuthError
 
-export async function requireAuth(req: Request): Promise<AuthResult> {
+function extractHeaderToken(req: Request) {
   const authHeader = req.headers.get("authorization")
-
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return { error: true, status: 401, message: "Não autenticado" }
+    return null
   }
 
-  const token = authHeader.replace("Bearer ", "")
+  const token = authHeader.replace("Bearer ", "").trim()
+  return token.length > 0 ? token : null
+}
 
-  let payload: JwtPayload
+function resolvePayload(req: Request): JwtPayload | null {
+  const headerToken = extractHeaderToken(req)
+  const cookieToken = readCookie(req, ACCESS_TOKEN_COOKIE)
 
-  try {
-    payload = verifyToken(token)
-  } catch {
-    return { error: true, status: 401, message: "Token inválido ou expirado" }
+  const candidates = [headerToken, cookieToken].filter(
+    (value): value is string => Boolean(value)
+  )
+
+  for (const token of candidates) {
+    try {
+      const payload = verifyToken(token)
+      if (payload.type && payload.type !== "access") {
+        continue
+      }
+      return payload
+    } catch {
+      continue
+    }
   }
 
-  if (payload.type && payload.type !== "access") {
-    return { error: true, status: 401, message: "Token inválido" }
+  return null
+}
+
+export async function requireAuth(req: Request): Promise<AuthResult> {
+  const payload = resolvePayload(req)
+  if (!payload) {
+    return { error: true, status: 401, message: "Nao autenticado" }
   }
 
   const user = await prisma.user.findUnique({
@@ -62,11 +81,11 @@ export async function requireAuth(req: Request): Promise<AuthResult> {
   })
 
   if (!user) {
-    return { error: true, status: 401, message: "Usuário não encontrado" }
+    return { error: true, status: 401, message: "Usuario nao encontrado" }
   }
 
   if (user.status !== "ACTIVE") {
-    return { error: true, status: 403, message: "Usuário suspenso" }
+    return { error: true, status: 403, message: "Usuario suspenso" }
   }
 
   if (user.mustChangePassword) {
@@ -88,3 +107,4 @@ export async function requireAuth(req: Request): Promise<AuthResult> {
     },
   }
 }
+

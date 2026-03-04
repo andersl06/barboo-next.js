@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { FormEvent, useState } from "react"
 import { UIButton } from "@/components/ui/UIButton"
 import {
-  clearTempToken,
   fetchMeContext,
   setAccessToken,
   setTempToken,
@@ -13,8 +12,6 @@ import {
 
 type LoginResponseData = {
   mustChangePassword: boolean
-  token?: string
-  tempToken?: string
 }
 
 type ApiErrorDetail = {
@@ -28,6 +25,7 @@ type ApiResult<T> =
 
 type LoginFormProps = {
   registered?: boolean
+  reset?: boolean
   nextPath?: string | null
 }
 
@@ -36,7 +34,19 @@ function resolveNextPath(raw: string | null) {
     return "/"
   }
 
-  return raw
+  if (raw.startsWith("//") || raw.includes("\\") || raw.toLowerCase().startsWith("/javascript:")) {
+    return "/"
+  }
+
+  try {
+    const url = new URL(raw, "http://localhost")
+    if (url.origin !== "http://localhost") {
+      return "/"
+    }
+    return `${url.pathname}${url.search}${url.hash}`
+  } catch {
+    return "/"
+  }
 }
 
 function normalizeEmail(value: string) {
@@ -104,16 +114,18 @@ function LockIcon() {
   )
 }
 
-export function LoginForm({ registered = false, nextPath }: LoginFormProps) {
+export function LoginForm({ registered = false, reset = false, nextPath }: LoginFormProps) {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const successHint = registered
-    ? "Conta criada com sucesso. Entre para continuar."
-    : null
+  const successHint = reset
+    ? "Senha redefinida com sucesso. Entre com sua nova senha."
+    : registered
+      ? "Conta criada com sucesso. Entre para continuar."
+      : null
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -135,21 +147,14 @@ export function LoginForm({ registered = false, nextPath }: LoginFormProps) {
         return
       }
 
-      if (result.data.mustChangePassword && result.data.tempToken) {
-        setTempToken(result.data.tempToken)
+      if (result.data.mustChangePassword) {
+        setTempToken("cookie-temp")
         router.push("/barber/change-password")
         return
       }
+      setAccessToken("cookie-session")
 
-      if (!result.data.token) {
-        setError("Nao foi possivel concluir o login.")
-        return
-      }
-
-      setAccessToken(result.data.token)
-      clearTempToken()
-
-      const context = await fetchMeContext(result.data.token)
+      const context = await fetchMeContext()
       const explicitNextPath = resolveNextPath(nextPath ?? null)
       const hasExplicitNext = Boolean(nextPath && nextPath.startsWith("/"))
 
@@ -236,12 +241,12 @@ export function LoginForm({ registered = false, nextPath }: LoginFormProps) {
       </label>
 
       <div className="text-right">
-        <button
-          type="button"
+        <Link
+          href="/auth/forgot-password"
           className="text-sm text-[#c6d0ee] transition hover:text-white"
         >
           Esqueceu a senha?
-        </button>
+        </Link>
       </div>
 
       <UIButton

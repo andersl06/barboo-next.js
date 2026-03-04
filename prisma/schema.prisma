@@ -33,9 +33,25 @@ model User {
   clientAppointments BarbershopAppointment[] @relation("ClientAppointments")
   barberAppointments BarbershopAppointment[] @relation("BarberAppointments")
   canceledAppointments BarbershopAppointment[] @relation("CanceledByUser")
+  passwordResetTokens  PasswordResetToken[]
 
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique @db.VarChar(128)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
 }
 
 model Barbershop {

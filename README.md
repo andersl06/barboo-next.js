@@ -204,3 +204,74 @@ Estruturar financeiro
 Implementar avaliações
 
 Lançar versão beta
+
+## Password reset por email
+
+Foi implementado o fluxo de recuperacao de senha com App Router + Prisma:
+
+- `POST /api/auth/forgot-password`
+- `POST /api/auth/reset-password`
+- Paginas:
+  - `/auth/forgot-password`
+  - `/auth/reset-password?token=...`
+
+### Variaveis de ambiente
+
+Adicione no seu `.env`:
+
+```env
+APP_URL="http://localhost:3000"
+EMAIL_PROVIDER="console" # console | resend
+EMAIL_FROM="Barboo <no-reply@seu-dominio.com>"
+RESEND_API_KEY=""
+PASSWORD_RESET_TOKEN_SECRET="troque-por-um-segredo-forte"
+PASSWORD_RESET_TOKEN_TTL_MINUTES="30"
+```
+
+Observacoes:
+
+- Em desenvolvimento, com `EMAIL_PROVIDER=console`, o link de reset eh logado no terminal.
+- Em producao, use `EMAIL_PROVIDER=resend` + `RESEND_API_KEY` + `EMAIL_FROM`.
+
+### Como testar localmente
+
+1. Rode as migrations:
+
+```bash
+npx prisma migrate dev
+```
+
+2. Suba o app:
+
+```bash
+npm run dev
+```
+
+3. Acesse:
+
+- `http://localhost:3000/auth/forgot-password`
+- informe o email do usuario
+- copie o link exibido no terminal (provider `console`)
+- abra `.../auth/reset-password?token=...`
+- defina a nova senha
+- faca login normalmente
+
+### Producao (Vercel + Neon)
+
+1. No Neon, garanta `DATABASE_URL` de producao.
+2. Na Vercel, configure as envs:
+   - `DATABASE_URL`
+   - `JWT_SECRET`
+   - `APP_URL` (url publica do app)
+   - `EMAIL_PROVIDER=resend`
+   - `EMAIL_FROM`
+   - `RESEND_API_KEY`
+   - `PASSWORD_RESET_TOKEN_SECRET`
+   - `PASSWORD_RESET_TOKEN_TTL_MINUTES`
+3. Aplique migrations em producao:
+
+```bash
+npx prisma migrate deploy
+```
+
+4. Redeploy na Vercel e teste o fluxo completo.

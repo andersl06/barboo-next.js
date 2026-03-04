@@ -20,7 +20,6 @@ type ApiResult<T> =
   | { success: false; code: string; message: string; errors?: ApiErrorDetail[] }
 
 type ChangePasswordData = {
-  token: string
   user: {
     id: string
     name: string
@@ -74,7 +73,6 @@ export default function BarberChangePasswordPage() {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${tempToken}`,
         },
         body: JSON.stringify({
           newPassword,
@@ -88,7 +86,7 @@ export default function BarberChangePasswordPage() {
         return
       }
 
-      setAccessToken(result.data.token)
+      setAccessToken("cookie-session")
       clearTempToken()
       setSuccessMessage("Senha alterada com sucesso. Redirecionando...")
       window.setTimeout(() => {
@@ -158,4 +156,3 @@ export default function BarberChangePasswordPage() {
     </BarberShell>
   )
 }
-

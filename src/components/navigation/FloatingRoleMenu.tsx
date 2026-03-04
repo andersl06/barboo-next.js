@@ -413,7 +413,9 @@ export function FloatingRoleMenu() {
     return null
   }
 
-  const greeting = `Ola, ${roleLabel(scope)}!`
+  const currentRoleLabel = roleLabel(scope)
+  const userName = context.user.name.trim().length > 0 ? context.user.name.trim() : currentRoleLabel
+  const greeting = `Ola, ${userName}!`
 
   return (
     <>
@@ -437,17 +439,16 @@ export function FloatingRoleMenu() {
         role="dialog"
         aria-modal="true"
         aria-label="Menu principal"
-        className={`fixed bottom-0 left-0 right-0 z-[1099] max-h-[84svh] rounded-t-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(21,25,56,0.98)_0%,rgba(12,16,39,0.98)_100%)] text-[#f1f2f7] shadow-[0_-12px_40px_rgba(0,0,0,0.55)] transition-transform md:top-0 md:right-auto md:max-h-none md:w-[390px] md:rounded-none md:rounded-r-3xl md:shadow-[20px_0_50px_rgba(0,0,0,0.5)] ${
-          isOpen
-            ? "translate-y-0 md:translate-x-0"
-            : "translate-y-full md:translate-y-0 md:-translate-x-full"
+        className={`fixed left-0 top-0 z-[1099] h-[100svh] w-[min(390px,88vw)] rounded-r-3xl border border-white/10 border-l-0 bg-[linear-gradient(180deg,rgba(21,25,56,0.98)_0%,rgba(12,16,39,0.98)_100%)] text-[#f1f2f7] shadow-[20px_0_50px_rgba(0,0,0,0.5)] transition-transform ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex h-full flex-col">
           <header className="flex items-center justify-between border-b border-white/10 px-4 py-4">
             <div>
               <p className="text-[11px] uppercase tracking-[0.1em] text-[#aab4d6]">Menu</p>
-              <h2 className="text-lg font-semibold text-[#f7f8ff]">{greeting} ??</h2>
+              <h2 className="text-lg font-semibold text-[#f7f8ff]">{greeting}</h2>
+              <p className="text-xs text-[#aab4d6]">{currentRoleLabel}</p>
             </div>
             <button
               ref={closeButtonRef}

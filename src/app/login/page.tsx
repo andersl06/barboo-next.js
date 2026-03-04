@@ -5,6 +5,7 @@ import { LoginForm } from "@/components/auth/LoginForm"
 type LoginPageProps = {
   searchParams: Promise<{
     registered?: string
+    reset?: string
     next?: string
   }>
 }
@@ -12,6 +13,7 @@ type LoginPageProps = {
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const query = await searchParams
   const registered = query.registered === "1"
+  const reset = query.reset === "1"
   const nextPath = typeof query.next === "string" ? query.next : null
 
   return (
@@ -36,7 +38,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               />
             </div>
 
-            <LoginForm registered={registered} nextPath={nextPath} />
+            <LoginForm registered={registered} reset={reset} nextPath={nextPath} />
           </div>
         </div>
       </section>
