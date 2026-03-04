@@ -23,10 +23,12 @@ type ApiResult<T> = { success: true; data: T } | ApiFailure
 type BarberProfileData = {
   userId: string
   name: string
+  email: string
   phone: string | null
   bio: string | null
   avatarUrl: string | null
   weeklySchedule: unknown
+  hasBarberMembership: boolean
 }
 
 type BarberBlock = {
@@ -94,9 +96,9 @@ export default function BarberEditPage() {
 
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
 
   const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [bio, setBio] = useState("")
   const [newPassword, setNewPassword] = useState("")
@@ -104,6 +106,14 @@ export default function BarberEditPage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
 
+  const [savingName, setSavingName] = useState(false)
+  const [savingEmail, setSavingEmail] = useState(false)
+  const [savingPhone, setSavingPhone] = useState(false)
+  const [savingBio, setSavingBio] = useState(false)
+  const [savingPassword, setSavingPassword] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+
+  const [canManageOwnBlocks, setCanManageOwnBlocks] = useState(false)
   const [blocks, setBlocks] = useState<BarberBlock[]>([])
   const [blockError, setBlockError] = useState<string | null>(null)
   const [savingBlock, setSavingBlock] = useState(false)
@@ -114,39 +124,48 @@ export default function BarberEditPage() {
   const [blockEndTime, setBlockEndTime] = useState("10:00")
   const [blockReason, setBlockReason] = useState("")
 
-  const avatarFallback = useMemo(() => getInitials(userName ?? "B"), [userName])
+  const avatarFallback = useMemo(() => getInitials(name || userName || "B"), [name, userName])
+
+  const applyProfileData = useCallback((data: BarberProfileData) => {
+    setName(data.name)
+    setEmail(data.email)
+    setPhone(formatPhone(data.phone ?? ""))
+    setBio(data.bio ?? "")
+    setAvatarUrl(data.avatarUrl ?? null)
+    setCanManageOwnBlocks(data.hasBarberMembership)
+  }, [])
 
   const loadData = useCallback(async () => {
-    if (!token || !userId || !barbershopId) return
+    if (!token) return
 
     setError(null)
     setBlockError(null)
 
     try {
-      const headers = { Authorization: `Bearer ${token}` }
-      const [profileResponse, blocksResponse] = await Promise.all([
-        fetch("/api/barbers/me/profile", { headers, cache: "no-store" }),
-        fetch(`/api/barbers/${userId}/profile?barbershopId=${barbershopId}`, {
-          headers,
-          cache: "no-store",
-        }),
-      ])
+      const profileResponse = await fetch("/api/barbers/me/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      })
 
-      const [profileResult, blocksResult] = await Promise.all([
-        profileResponse.json() as Promise<ApiResult<BarberProfileData>>,
-        blocksResponse.json() as Promise<ApiResult<BarberBlock[]>>,
-      ])
-
+      const profileResult = await profileResponse.json() as ApiResult<BarberProfileData>
       if (!profileResult.success) {
-        setError(resolveError(profileResult, "Falha ao carregar perfil do barbeiro."))
+        setError(resolveError(profileResult, "Falha ao carregar perfil."))
         return
       }
 
-      setName(profileResult.data.name)
-      setPhone(formatPhone(profileResult.data.phone ?? ""))
-      setBio(profileResult.data.bio ?? "")
-      setAvatarUrl(profileResult.data.avatarUrl ?? null)
+      applyProfileData(profileResult.data)
 
+      if (!profileResult.data.hasBarberMembership || !userId || !barbershopId) {
+        setBlocks([])
+        return
+      }
+
+      const blocksResponse = await fetch(`/api/barbers/${userId}/profile?barbershopId=${barbershopId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      })
+
+      const blocksResult = await blocksResponse.json() as ApiResult<BarberBlock[]>
       if (!blocksResult.success) {
         setBlocks([])
         setBlockError(resolveError(blocksResult, "Sem permissao para gerenciar bloqueios."))
@@ -155,9 +174,9 @@ export default function BarberEditPage() {
 
       setBlocks(blocksResult.data)
     } catch {
-      setError("Falha de conexao ao carregar configuracoes do barbeiro.")
+      setError("Falha de conexao ao carregar configuracoes do perfil.")
     }
-  }, [barbershopId, token, userId])
+  }, [applyProfileData, barbershopId, token, userId])
 
   useEffect(() => {
     if (state !== "ready") return
@@ -167,71 +186,130 @@ export default function BarberEditPage() {
     return () => window.clearTimeout(timer)
   }, [state, loadData])
 
-  async function saveProfile(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!token) return
+  const saveProfileSection = useCallback(async (payload: Record<string, unknown>, successMessage: string, fallbackError: string) => {
+    if (!token) return false
 
     setError(null)
     setSuccess(null)
-    setLoading(true)
 
     try {
-      const profileResponse = await fetch("/api/barbers/me/profile", {
+      const response = await fetch("/api/barbers/me/profile", {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          name,
-          phone,
-          bio,
-          newPassword: newPassword.trim().length > 0 ? newPassword : undefined,
-          confirmPassword: confirmPassword.trim().length > 0 ? confirmPassword : undefined,
-        }),
+        body: JSON.stringify(payload),
       })
 
-      const profileResult = (await profileResponse.json()) as ApiResult<BarberProfileData>
-      if (!profileResult.success) {
-        setError(resolveError(profileResult, "Falha ao atualizar bio."))
+      const result = await response.json() as ApiResult<BarberProfileData>
+      if (!result.success) {
+        setError(resolveError(result, fallbackError))
+        return false
+      }
+
+      applyProfileData(result.data)
+      setSuccess(successMessage)
+      return true
+    } catch {
+      setError("Falha de conexao ao atualizar perfil.")
+      return false
+    }
+  }, [applyProfileData, token])
+
+  async function saveNameSection(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSavingName(true)
+    await saveProfileSection({ name }, "Nome atualizado com sucesso.", "Falha ao atualizar nome.")
+    setSavingName(false)
+  }
+
+  async function saveEmailSection(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSavingEmail(true)
+    await saveProfileSection({ email }, "Email atualizado com sucesso.", "Falha ao atualizar email.")
+    setSavingEmail(false)
+  }
+
+  async function savePhoneSection(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSavingPhone(true)
+    await saveProfileSection({ phone }, "Telefone atualizado com sucesso.", "Falha ao atualizar telefone.")
+    setSavingPhone(false)
+  }
+
+  async function saveBioSection(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSavingBio(true)
+    await saveProfileSection({ bio }, "Bio atualizada com sucesso.", "Falha ao atualizar bio.")
+    setSavingBio(false)
+  }
+
+  async function savePasswordSection(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSavingPassword(true)
+
+    const successResult = await saveProfileSection(
+      {
+        newPassword,
+        confirmPassword,
+      },
+      "Senha atualizada com sucesso.",
+      "Falha ao atualizar senha."
+    )
+
+    if (successResult) {
+      setNewPassword("")
+      setConfirmPassword("")
+    }
+
+    setSavingPassword(false)
+  }
+
+  async function saveAvatarSection(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!token) return
+
+    if (!avatarFile) {
+      setError("Selecione uma imagem para atualizar o avatar.")
+      return
+    }
+
+    setUploadingAvatar(true)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      const formData = new FormData()
+      formData.set("file", avatarFile)
+
+      const response = await fetch("/api/barbers/me/avatar", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      })
+
+      const result = await response.json() as ApiResult<{ avatarUrl: string }>
+      if (!result.success) {
+        setError(resolveError(result, "Falha ao atualizar avatar."))
         return
       }
 
-      if (avatarFile) {
-        const formData = new FormData()
-        formData.set("file", avatarFile)
-
-        const avatarResponse = await fetch("/api/barbers/me/avatar", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        })
-
-        const avatarResult = (await avatarResponse.json()) as ApiResult<{ avatarUrl: string }>
-        if (!avatarResult.success) {
-          setError(resolveError(avatarResult, "Falha ao atualizar avatar."))
-          return
-        }
-
-        setAvatarUrl(avatarResult.data.avatarUrl)
-        setAvatarFile(null)
-      }
-
-      setSuccess("Perfil atualizado com sucesso.")
-      setNewPassword("")
-      setConfirmPassword("")
+      setAvatarUrl(result.data.avatarUrl)
+      setAvatarFile(null)
+      setSuccess("Avatar atualizado com sucesso.")
     } catch {
-      setError("Falha de conexao ao atualizar perfil.")
+      setError("Falha de conexao ao atualizar avatar.")
     } finally {
-      setLoading(false)
+      setUploadingAvatar(false)
     }
   }
 
   async function createBlock(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!token || !userId || !barbershopId) return
+    if (!token || !userId || !barbershopId || !canManageOwnBlocks) return
 
     setBlockError(null)
 
@@ -262,7 +340,7 @@ export default function BarberEditPage() {
         }),
       })
 
-      const result = (await response.json()) as ApiResult<BarberBlock>
+      const result = await response.json() as ApiResult<BarberBlock>
       if (!result.success) {
         setBlockError(resolveError(result, "Falha ao criar bloqueio."))
         return
@@ -281,7 +359,7 @@ export default function BarberEditPage() {
   }
 
   async function removeBlock(blockId: string) {
-    if (!token || !userId || !barbershopId) return
+    if (!token || !userId || !barbershopId || !canManageOwnBlocks) return
 
     setBlockError(null)
     setRemovingBlockId(blockId)
@@ -294,7 +372,7 @@ export default function BarberEditPage() {
         },
       })
 
-      const result = (await response.json()) as ApiResult<{ deleted: boolean }>
+      const result = await response.json() as ApiResult<{ deleted: boolean }>
       if (!result.success) {
         setBlockError(resolveError(result, "Falha ao remover bloqueio."))
         return
@@ -324,7 +402,7 @@ export default function BarberEditPage() {
   return (
     <BarberShell
       title="Editar perfil"
-      subtitle="Atualize bio, avatar e bloqueios de disponibilidade."
+      subtitle="Configuracoes separadas para dados pessoais, contato, senha, bio e avatar."
       activePath="/barber/edit"
       statusLabel={barbershopStatus}
     >
@@ -340,212 +418,246 @@ export default function BarberEditPage() {
         </p>
       ) : null}
 
-      <section className="mt-4 grid gap-4 lg:grid-cols-2">
+      <section className="mt-4 grid gap-4 xl:grid-cols-2">
         <article className="rounded-2xl border border-white/12 bg-[#0b1330]/85 p-4">
-          <h2 className="text-lg font-semibold">Perfil do barbeiro</h2>
-          <form className="mt-4 space-y-4" onSubmit={saveProfile}>
+          <h2 className="text-lg font-semibold">Avatar</h2>
+          <form className="mt-4 space-y-3" onSubmit={saveAvatarSection}>
             <div className="flex items-center gap-3">
               {avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={avatarUrl}
-                  alt="Avatar do barbeiro"
-                  className="h-14 w-14 rounded-full border border-white/20 object-cover"
+                  alt="Avatar"
+                  className="h-16 w-16 rounded-full border border-white/20 object-cover"
                 />
               ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-[#131d49] text-sm font-semibold text-[#dbe4ff]">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/20 bg-[#131d49] text-sm font-semibold text-[#dbe4ff]">
                   {avatarFallback}
                 </div>
               )}
 
-              <label className="text-sm text-[#c6d1ef]">
-                Atualizar avatar
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  className="mt-1 block w-full text-xs text-[#b4c0e7]"
-                  onChange={(event) => setAvatarFile(event.target.files?.[0] ?? null)}
-                />
-              </label>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="block w-full text-xs text-[#b4c0e7]"
+                onChange={(event) => setAvatarFile(event.target.files?.[0] ?? null)}
+              />
             </div>
 
-            <label className="block">
-              <span className="mb-1 block text-sm text-[#b8c3e6]">Nome</span>
-              <input
-                className="w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-base text-[#f4f6ff] outline-none transition placeholder:text-[#8796c5] focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                required
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-1 block text-sm text-[#b8c3e6]">Telefone</span>
-              <input
-                className="w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-base text-[#f4f6ff] outline-none transition placeholder:text-[#8796c5] focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
-                value={phone}
-                onChange={(event) => setPhone(formatPhone(event.target.value))}
-                placeholder="(11) 99999-0000"
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-1 block text-sm text-[#b8c3e6]">Bio</span>
-              <textarea
-                className="min-h-[120px] w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-sm text-[#f4f6ff] outline-none transition placeholder:text-[#8796c5] focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
-                maxLength={500}
-                value={bio}
-                onChange={(event) => setBio(event.target.value)}
-                placeholder="Descreva seu estilo, especialidades e experiencia."
-              />
-            </label>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="block">
-                <span className="mb-1 block text-sm text-[#b8c3e6]">Nova senha (opcional)</span>
-                <input
-                  type="password"
-                  className="w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-base text-[#f4f6ff] outline-none transition placeholder:text-[#8796c5] focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
-                  value={newPassword}
-                  onChange={(event) => setNewPassword(event.target.value)}
-                  minLength={6}
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm text-[#b8c3e6]">Confirmar nova senha</span>
-                <input
-                  type="password"
-                  className="w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-base text-[#f4f6ff] outline-none transition placeholder:text-[#8796c5] focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  minLength={6}
-                />
-              </label>
-            </div>
-
-            <UIButton
-              type="submit"
-              className="!w-auto !px-4 !py-2 !text-sm"
-              disabled={loading}
-            >
-              {loading ? "Salvando..." : "Salvar perfil"}
+            <UIButton type="submit" className="!w-auto !px-4 !py-2 !text-sm" disabled={uploadingAvatar}>
+              {uploadingAvatar ? "Enviando..." : "Salvar avatar"}
             </UIButton>
           </form>
         </article>
 
         <article className="rounded-2xl border border-white/12 bg-[#0b1330]/85 p-4">
-          <h2 className="text-lg font-semibold">Bloqueios de agenda</h2>
-          {blockError ? (
-            <p className="mt-3 rounded-xl border border-red-300/35 bg-red-500/12 px-3 py-2 text-sm text-red-100">
-              {blockError}
-            </p>
-          ) : null}
-
-          <form className="mt-4 grid gap-3" onSubmit={createBlock}>
-            <label className="block">
-              <span className="mb-1 block text-sm text-[#b8c3e6]">Data</span>
-              <input
-                type="date"
-                value={blockDate}
-                onChange={(event) => setBlockDate(event.target.value)}
-                className="w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-base text-[#f4f6ff] outline-none transition focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
-                required
-              />
-            </label>
-
-            <label className="inline-flex items-center gap-2 text-sm text-[#c6d1ef]">
-              <input
-                type="checkbox"
-                checked={blockAllDay}
-                onChange={(event) => setBlockAllDay(event.target.checked)}
-                className="h-4 w-4 rounded border-white/25 bg-[#0b153c]"
-              />
-              Bloqueio o dia inteiro
-            </label>
-
-            {!blockAllDay ? (
-              <div className="grid grid-cols-2 gap-2">
-                <label className="block">
-                  <span className="mb-1 block text-sm text-[#b8c3e6]">Inicio</span>
-                  <input
-                    type="time"
-                    value={blockStartTime}
-                    onChange={(event) => setBlockStartTime(event.target.value)}
-                    className="w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-base text-[#f4f6ff] outline-none transition focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
-                    required
-                  />
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-sm text-[#b8c3e6]">Fim</span>
-                  <input
-                    type="time"
-                    value={blockEndTime}
-                    onChange={(event) => setBlockEndTime(event.target.value)}
-                    className="w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-base text-[#f4f6ff] outline-none transition focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
-                    required
-                  />
-                </label>
-              </div>
-            ) : null}
-
-            <label className="block">
-              <span className="mb-1 block text-sm text-[#b8c3e6]">Motivo (opcional)</span>
-              <input
-                type="text"
-                value={blockReason}
-                onChange={(event) => setBlockReason(event.target.value)}
-                maxLength={200}
-                className="w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-base text-[#f4f6ff] outline-none transition placeholder:text-[#8796c5] focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
-                placeholder="Ex.: Atendimento externo"
-              />
-            </label>
-
-            <UIButton
-              type="submit"
-              className="!w-auto !px-4 !py-2 !text-sm"
-              disabled={savingBlock}
-            >
-              {savingBlock ? "Salvando..." : "Adicionar bloqueio"}
+          <h2 className="text-lg font-semibold">Nome</h2>
+          <form className="mt-4 space-y-3" onSubmit={saveNameSection}>
+            <input
+              className="w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-base text-[#f4f6ff] outline-none transition focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              required
+            />
+            <UIButton type="submit" className="!w-auto !px-4 !py-2 !text-sm" disabled={savingName}>
+              {savingName ? "Salvando..." : "Salvar nome"}
             </UIButton>
           </form>
-
-          <div className="mt-5 grid gap-2">
-            {blocks.length > 0 ? (
-              blocks.map((block) => (
-                <article
-                  key={block.id}
-                  className="rounded-xl border border-white/12 bg-[#091029]/90 p-3"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-sm font-semibold text-[#e9edff]">
-                      {formatBlockDate(block.date)}
-                    </p>
-                    <button
-                      type="button"
-                      className="rounded-lg border border-white/20 px-2.5 py-1 text-xs font-semibold text-[#d8e3ff] transition hover:bg-white/10"
-                      onClick={() => void removeBlock(block.id)}
-                      disabled={removingBlockId === block.id}
-                    >
-                      {removingBlockId === block.id ? "Removendo..." : "Remover"}
-                    </button>
-                  </div>
-                  <p className="mt-1 text-sm text-[#c8d2f2]">
-                    {block.allDay
-                      ? "Dia inteiro"
-                      : `${block.startTime ?? "--"} - ${block.endTime ?? "--"}`}
-                  </p>
-                  {block.reason ? (
-                    <p className="mt-1 text-xs text-[#9fb0dd]">Motivo: {block.reason}</p>
-                  ) : null}
-                </article>
-              ))
-            ) : (
-              <p className="rounded-xl border border-white/10 bg-[#0a122f]/70 p-4 text-sm text-[#c6d1ef]">
-                Nenhum bloqueio cadastrado.
-              </p>
-            )}
-          </div>
         </article>
+
+        <article className="rounded-2xl border border-white/12 bg-[#0b1330]/85 p-4">
+          <h2 className="text-lg font-semibold">Email</h2>
+          <form className="mt-4 space-y-3" onSubmit={saveEmailSection}>
+            <input
+              type="email"
+              className="w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-base text-[#f4f6ff] outline-none transition focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
+              value={email}
+              onChange={(event) => setEmail(event.target.value.trim().toLowerCase())}
+              required
+            />
+            <UIButton type="submit" className="!w-auto !px-4 !py-2 !text-sm" disabled={savingEmail}>
+              {savingEmail ? "Salvando..." : "Salvar email"}
+            </UIButton>
+          </form>
+        </article>
+
+        <article className="rounded-2xl border border-white/12 bg-[#0b1330]/85 p-4">
+          <h2 className="text-lg font-semibold">Telefone</h2>
+          <form className="mt-4 space-y-3" onSubmit={savePhoneSection}>
+            <input
+              className="w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-base text-[#f4f6ff] outline-none transition placeholder:text-[#8796c5] focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
+              value={phone}
+              onChange={(event) => setPhone(formatPhone(event.target.value))}
+              placeholder="(11) 99999-0000"
+            />
+            <UIButton type="submit" className="!w-auto !px-4 !py-2 !text-sm" disabled={savingPhone}>
+              {savingPhone ? "Salvando..." : "Salvar telefone"}
+            </UIButton>
+          </form>
+        </article>
+
+        <article className="rounded-2xl border border-white/12 bg-[#0b1330]/85 p-4 xl:col-span-2">
+          <h2 className="text-lg font-semibold">Bio</h2>
+          <form className="mt-4 space-y-3" onSubmit={saveBioSection}>
+            <textarea
+              className="min-h-[120px] w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-sm text-[#f4f6ff] outline-none transition placeholder:text-[#8796c5] focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
+              maxLength={500}
+              value={bio}
+              onChange={(event) => setBio(event.target.value)}
+              placeholder="Descreva seu estilo, especialidades e experiencia."
+            />
+            <UIButton type="submit" className="!w-auto !px-4 !py-2 !text-sm" disabled={savingBio}>
+              {savingBio ? "Salvando..." : "Salvar bio"}
+            </UIButton>
+          </form>
+        </article>
+
+        <article className="rounded-2xl border border-white/12 bg-[#0b1330]/85 p-4 xl:col-span-2">
+          <h2 className="text-lg font-semibold">Senha</h2>
+          <form className="mt-4 grid gap-3 sm:grid-cols-2" onSubmit={savePasswordSection}>
+            <label className="block">
+              <span className="mb-1 block text-sm text-[#b8c3e6]">Nova senha</span>
+              <input
+                type="password"
+                className="w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-base text-[#f4f6ff] outline-none transition focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                minLength={6}
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-sm text-[#b8c3e6]">Confirmar nova senha</span>
+              <input
+                type="password"
+                className="w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-base text-[#f4f6ff] outline-none transition focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                minLength={6}
+              />
+            </label>
+            <div className="sm:col-span-2">
+              <UIButton type="submit" className="!w-auto !px-4 !py-2 !text-sm" disabled={savingPassword}>
+                {savingPassword ? "Salvando..." : "Salvar senha"}
+              </UIButton>
+            </div>
+          </form>
+        </article>
+      </section>
+
+      <section className="mt-6 rounded-2xl border border-white/12 bg-[#0b1330]/85 p-4">
+        <h2 className="text-lg font-semibold">Bloqueios de agenda</h2>
+        {!canManageOwnBlocks ? (
+          <p className="mt-3 rounded-xl border border-white/10 bg-[#091029]/75 p-3 text-sm text-[#c6d1ef]">
+            Este recurso fica disponivel apenas para owner que tambem esteja habilitado como barbeiro.
+          </p>
+        ) : (
+          <>
+            {blockError ? (
+              <p className="mt-3 rounded-xl border border-red-300/35 bg-red-500/12 px-3 py-2 text-sm text-red-100">
+                {blockError}
+              </p>
+            ) : null}
+
+            <form className="mt-4 grid gap-3" onSubmit={createBlock}>
+              <label className="block">
+                <span className="mb-1 block text-sm text-[#b8c3e6]">Data</span>
+                <input
+                  type="date"
+                  value={blockDate}
+                  onChange={(event) => setBlockDate(event.target.value)}
+                  className="w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-base text-[#f4f6ff] outline-none transition focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
+                  required
+                />
+              </label>
+
+              <label className="inline-flex items-center gap-2 text-sm text-[#c6d1ef]">
+                <input
+                  type="checkbox"
+                  checked={blockAllDay}
+                  onChange={(event) => setBlockAllDay(event.target.checked)}
+                  className="h-4 w-4 rounded border-white/25 bg-[#0b153c]"
+                />
+                Bloqueio o dia inteiro
+              </label>
+
+              {!blockAllDay ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="block">
+                    <span className="mb-1 block text-sm text-[#b8c3e6]">Inicio</span>
+                    <input
+                      type="time"
+                      value={blockStartTime}
+                      onChange={(event) => setBlockStartTime(event.target.value)}
+                      className="w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-base text-[#f4f6ff] outline-none transition focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
+                      required
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-sm text-[#b8c3e6]">Fim</span>
+                    <input
+                      type="time"
+                      value={blockEndTime}
+                      onChange={(event) => setBlockEndTime(event.target.value)}
+                      className="w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-base text-[#f4f6ff] outline-none transition focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
+                      required
+                    />
+                  </label>
+                </div>
+              ) : null}
+
+              <label className="block">
+                <span className="mb-1 block text-sm text-[#b8c3e6]">Motivo (opcional)</span>
+                <input
+                  type="text"
+                  value={blockReason}
+                  onChange={(event) => setBlockReason(event.target.value)}
+                  maxLength={200}
+                  className="w-full rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2.5 text-base text-[#f4f6ff] outline-none transition placeholder:text-[#8796c5] focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
+                  placeholder="Ex.: Atendimento externo"
+                />
+              </label>
+
+              <UIButton type="submit" className="!w-auto !px-4 !py-2 !text-sm" disabled={savingBlock}>
+                {savingBlock ? "Salvando..." : "Adicionar bloqueio"}
+              </UIButton>
+            </form>
+
+            <div className="mt-5 grid gap-2">
+              {blocks.length > 0 ? (
+                blocks.map((block) => (
+                  <article
+                    key={block.id}
+                    className="rounded-xl border border-white/12 bg-[#091029]/90 p-3"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-[#e9edff]">{formatBlockDate(block.date)}</p>
+                      <button
+                        type="button"
+                        className="rounded-lg border border-white/20 px-2.5 py-1 text-xs font-semibold text-[#d8e3ff] transition hover:bg-white/10"
+                        onClick={() => void removeBlock(block.id)}
+                        disabled={removingBlockId === block.id}
+                      >
+                        {removingBlockId === block.id ? "Removendo..." : "Remover"}
+                      </button>
+                    </div>
+                    <p className="mt-1 text-sm text-[#c8d2f2]">
+                      {block.allDay
+                        ? "Dia inteiro"
+                        : `${block.startTime ?? "--"} - ${block.endTime ?? "--"}`}
+                    </p>
+                    {block.reason ? (
+                      <p className="mt-1 text-xs text-[#9fb0dd]">Motivo: {block.reason}</p>
+                    ) : null}
+                  </article>
+                ))
+              ) : (
+                <p className="rounded-xl border border-white/10 bg-[#0a122f]/70 p-4 text-sm text-[#c6d1ef]">
+                  Nenhum bloqueio cadastrado.
+                </p>
+              )}
+            </div>
+          </>
+        )}
       </section>
     </BarberShell>
   )

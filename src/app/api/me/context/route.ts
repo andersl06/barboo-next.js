@@ -25,6 +25,11 @@ export async function GET(req: Request) {
       },
     })
 
+    const barberProfile = await prisma.barberProfile.findUnique({
+      where: { userId: auth.user.id },
+      select: { id: true },
+    })
+
     const barberMembership = await prisma.barbershopMembership.findFirst({
       where: {
         userId: auth.user.id,
@@ -70,6 +75,7 @@ export async function GET(req: Request) {
       barberBarbershopId,
       barbershopStatus,
       onboardingPending,
+      hasBarberProfile: Boolean(barberProfile),
       hasClientLocation:
         auth.user.clientLatitude !== null && auth.user.clientLongitude !== null,
       clientLocationUpdatedAt: auth.user.clientLocationUpdatedAt,

@@ -20,6 +20,7 @@ type MeContextData = {
   barberBarbershopId: string | null
   barbershopStatus: string | null
   onboardingPending: boolean
+  hasBarberProfile: boolean
   hasClientLocation: boolean
   clientLocationUpdatedAt: string | null
 }

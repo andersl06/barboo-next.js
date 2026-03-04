@@ -18,6 +18,10 @@ export const updateBarberProfileSchema = z
   .object({
     name: z
       .preprocess(asOptionalTrimmed, z.string().min(3, "Nome muito curto").max(80).optional()),
+    email: z
+      .preprocess(asOptionalTrimmed, z.string().email("Email invalido").optional())
+      .transform((value) => value?.toLowerCase())
+      .optional(),
     phone: optionalPhoneSchema.optional(),
     bio: z
       .preprocess(asOptionalTrimmed, z.string().max(500, "Bio deve ter no maximo 500 caracteres.").optional())

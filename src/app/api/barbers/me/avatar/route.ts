@@ -15,14 +15,35 @@ export async function POST(req: Request) {
       return failure("UNAUTHORIZED", auth.message, auth.status)
     }
 
-    const profile = await prisma.barberProfile.findUnique({
+    const [ownerMembership, barberMembership] = await Promise.all([
+      prisma.barbershopMembership.findFirst({
+        where: {
+          userId: auth.user.id,
+          role: "OWNER",
+          isActive: true,
+        },
+        select: { id: true },
+      }),
+      prisma.barbershopMembership.findFirst({
+        where: {
+          userId: auth.user.id,
+          role: "BARBER",
+          isActive: true,
+        },
+        select: { id: true },
+      }),
+    ])
+
+    if (!ownerMembership && !barberMembership) {
+      return failure("FORBIDDEN", "Acesso permitido apenas para owner/barber.", 403)
+    }
+
+    await prisma.barberProfile.upsert({
       where: { userId: auth.user.id },
+      update: {},
+      create: { userId: auth.user.id },
       select: { id: true },
     })
-
-    if (!profile) {
-      return failure(BARBER_PROFILE_ERRORS.BARBER_PROFILE_NOT_FOUND.code, BARBER_PROFILE_ERRORS.BARBER_PROFILE_NOT_FOUND.message, 404)
-    }
 
     const formData = await req.formData()
     const file = formData.get("file")

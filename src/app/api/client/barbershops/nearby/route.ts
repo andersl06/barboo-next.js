@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client"
 import { requireAuth } from "@/lib/auth/require-auth"
 import { prisma } from "@/lib/db/prisma"
 import { failure, success } from "@/lib/http/api-response"
@@ -28,6 +29,59 @@ function haversineDistanceKm(
 function roundTo(value: number, fractionDigits: number) {
   const factor = 10 ** fractionDigits
   return Math.round(value * factor) / factor
+}
+
+function resolveRating(services: Array<{ avgRating: unknown; ratingCount: number }>) {
+  const validServices = services
+    .map((service) => {
+      if (service.avgRating === null || service.ratingCount <= 0) return null
+      const numericRating = Number(service.avgRating)
+      if (!Number.isFinite(numericRating)) return null
+      return {
+        avgRating: numericRating,
+        ratingCount: service.ratingCount,
+      }
+    })
+    .filter((item): item is { avgRating: number; ratingCount: number } => item !== null)
+
+  if (validServices.length === 0) {
+    return { value: null, count: 0 }
+  }
+
+  const totalCount = validServices.reduce((sum, service) => sum + service.ratingCount, 0)
+  if (totalCount <= 0) {
+    return { value: null, count: 0 }
+  }
+
+  const weightedValue = validServices.reduce(
+    (sum, service) => sum + service.avgRating * service.ratingCount,
+    0
+  ) / totalCount
+
+  return {
+    value: roundTo(weightedValue, 1),
+    count: totalCount,
+  }
+}
+
+function isFavoritesSchemaOutdatedError(err: unknown) {
+  if (!(err instanceof Prisma.PrismaClientKnownRequestError)) {
+    return false
+  }
+
+  if (err.code !== "P2021" && err.code !== "P2022") {
+    return false
+  }
+
+  const message = err.message.toLowerCase()
+  const tableName = typeof err.meta?.table === "string" ? err.meta.table.toLowerCase() : ""
+  const modelName = typeof err.meta?.modelName === "string" ? err.meta.modelName.toLowerCase() : ""
+
+  return (
+    message.includes("favorite") ||
+    tableName.includes("favorite") ||
+    modelName.includes("favorite")
+  )
 }
 
 export async function GET(req: Request) {
@@ -102,36 +156,60 @@ export async function GET(req: Request) {
     const cosine = Math.max(Math.cos((latitude * Math.PI) / 180), 0.01)
     const longitudeDelta = radiusParam / (111 * cosine)
 
-    const candidates = await prisma.barbershop.findMany({
-      where: {
-        status: "ATIVA",
-        latitude: {
-          gte: latitude - latitudeDelta,
-          lte: latitude + latitudeDelta,
-          not: null,
+    const [candidates, favorites] = await Promise.all([
+      prisma.barbershop.findMany({
+        where: {
+          status: "ATIVA",
+          latitude: {
+            gte: latitude - latitudeDelta,
+            lte: latitude + latitudeDelta,
+            not: null,
+          },
+          longitude: {
+            gte: longitude - longitudeDelta,
+            lte: longitude + longitudeDelta,
+            not: null,
+          },
         },
-        longitude: {
-          gte: longitude - longitudeDelta,
-          lte: longitude + longitudeDelta,
-          not: null,
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          description: true,
+          logoUrl: true,
+          coverUrl: true,
+          city: true,
+          neighborhood: true,
+          avgPrice: true,
+          avgTimeMinutes: true,
+          latitude: true,
+          longitude: true,
+          services: {
+            where: { isActive: true },
+            select: {
+              avgRating: true,
+              ratingCount: true,
+            },
+          },
         },
-      },
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        description: true,
-        logoUrl: true,
-        coverUrl: true,
-        city: true,
-        neighborhood: true,
-        avgPrice: true,
-        avgTimeMinutes: true,
-        latitude: true,
-        longitude: true,
-      },
-      take: 200,
-    })
+        take: 200,
+      }),
+      prisma.favoriteBarbershop.findMany({
+        where: {
+          userId: auth.user.id,
+        },
+        select: {
+          barbershopId: true,
+        },
+      }).catch((err) => {
+        if (isFavoritesSchemaOutdatedError(err)) {
+          return [] as Array<{ barbershopId: string }>
+        }
+        throw err
+      }),
+    ])
+
+    const favoriteBarbershopIds = new Set(favorites.map((item) => item.barbershopId))
 
     const nearby = candidates
       .map((shop) => {
@@ -152,6 +230,8 @@ export async function GET(req: Request) {
           return null
         }
 
+        const rating = resolveRating(shop.services)
+
         return {
           id: shop.id,
           slug: shop.slug,
@@ -164,6 +244,9 @@ export async function GET(req: Request) {
           avgPrice: shop.avgPrice ? Number(shop.avgPrice) : null,
           avgTimeMinutes: shop.avgTimeMinutes,
           distanceKm: roundTo(distanceKm, 2),
+          rating: rating.value,
+          ratingCount: rating.count,
+          isFavorited: favoriteBarbershopIds.has(shop.id),
         }
       })
       .filter((shop): shop is NonNullable<typeof shop> => shop !== null)

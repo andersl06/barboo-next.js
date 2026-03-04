@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { BarberGate } from "@/components/barber/BarberGate"
 import { BarberShell } from "@/components/barber/BarberShell"
+import { SwipeConfirm } from "@/components/ui/SwipeConfirm"
 import { UIButton } from "@/components/ui/UIButton"
 import { clearAccessToken } from "@/lib/client/session"
 import { useBarberAccess } from "@/lib/client/use-barber-access"
@@ -94,7 +95,6 @@ export default function BarberDashboardPage() {
   const [totalClients, setTotalClients] = useState(0)
   const [loadingData, setLoadingData] = useState(false)
   const [processingId, setProcessingId] = useState<string | null>(null)
-  const [swipeValues, setSwipeValues] = useState<Record<string, number>>({})
 
   const loadDashboard = useCallback(async () => {
     if (!token) return
@@ -162,7 +162,6 @@ export default function BarberDashboardPage() {
       setUpcoming(upcomingResult.data.items)
       setTodayConfirmedCount(todayResult.data.items.length)
       setTotalClients(new Set(clientsResult.data.items.map((item) => item.clientUser.id)).size)
-      setSwipeValues({})
     } catch {
       setError("Falha de conexao ao carregar o dashboard do barbeiro.")
     } finally {
@@ -179,7 +178,7 @@ export default function BarberDashboardPage() {
   }, [state, loadDashboard])
 
   async function handleAction(item: AppointmentItem, action: "confirm" | "reject") {
-    if (!token) return
+    if (!token) return false
     setProcessingId(item.id)
     setError(null)
 
@@ -199,15 +198,10 @@ export default function BarberDashboardPage() {
       const result = (await response.json()) as ApiResult<{ id: string }>
       if (!result.success) {
         setError(resolveError(result, "Falha ao atualizar agendamento."))
-        return
+        return false
       }
 
       setPending((prev) => prev.filter((appointment) => appointment.id !== item.id))
-      setSwipeValues((prev) => {
-        const next = { ...prev }
-        delete next[item.id]
-        return next
-      })
 
       if (action === "confirm" && new Date(item.startAt).getTime() > Date.now()) {
         const confirmedItem: AppointmentItem = { ...item, status: "CONFIRMED" }
@@ -218,24 +212,14 @@ export default function BarberDashboardPage() {
         )
         setTodayConfirmedCount((prev) => prev + 1)
       }
+
+      return true
     } catch {
       setError("Falha de conexao ao atualizar agendamento.")
+      return false
     } finally {
       setProcessingId(null)
     }
-  }
-
-  function onSwipeChange(appointmentId: string, value: number) {
-    setSwipeValues((prev) => ({ ...prev, [appointmentId]: value }))
-  }
-
-  function onSwipeCommit(item: AppointmentItem) {
-    const value = swipeValues[item.id] ?? 0
-    if (value >= 90) {
-      void handleAction(item, "confirm")
-      return
-    }
-    setSwipeValues((prev) => ({ ...prev, [item.id]: 0 }))
   }
 
   const metricCards = useMemo(() => [
@@ -314,7 +298,6 @@ export default function BarberDashboardPage() {
         <div className="mt-4 grid gap-3">
           {pending.length > 0 ? (
             pending.map((item) => {
-              const currentSwipe = swipeValues[item.id] ?? 0
               const isProcessing = processingId === item.id
 
               return (
@@ -337,26 +320,11 @@ export default function BarberDashboardPage() {
                     Duracao/valor: {item.service.durationMinutes} min - {formatCurrency(item.service.priceCents)}
                   </p>
 
-                  <div className="mt-3 rounded-xl border border-[#f36c20]/35 bg-[#f36c20]/8 p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.08em] text-[#ffd8c2]">
-                        Deslize para confirmar
-                      </span>
-                      <span className="text-xs text-[#ffd8c2]">{Math.round(currentSwipe)}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      step={1}
-                      value={currentSwipe}
-                      disabled={isProcessing}
-                      onChange={(event) => onSwipeChange(item.id, Number(event.target.value))}
-                      onMouseUp={() => onSwipeCommit(item)}
-                      onTouchEnd={() => onSwipeCommit(item)}
-                      className="mt-2 h-2 w-full cursor-pointer accent-[#f36c20]"
-                    />
-                  </div>
+                  <SwipeConfirm
+                    className="mt-3"
+                    disabled={isProcessing}
+                    onConfirm={() => handleAction(item, "confirm")}
+                  />
 
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button

@@ -1,7 +1,6 @@
 "use client"
 
 import Image from "next/image"
-import Link from "next/link"
 import type { ReactNode } from "react"
 import { PremiumBackground } from "@/components/background"
 
@@ -40,13 +39,6 @@ export function BarberShell({
                 height={70}
                 className="h-auto w-[165px]"
               />
-              <Link
-                href="/"
-                aria-label="Voltar para pagina inicial"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-[#0b1330]/70 text-lg text-[#d8e3ff] transition hover:bg-white/10"
-              >
-                {"<"}
-              </Link>
             </div>
             <h1 className="mt-4 text-2xl font-bold tracking-tight md:text-3xl">{title}</h1>
             {subtitle ? <p className="mt-1 text-sm text-[#a7b1d0] md:text-base">{subtitle}</p> : null}

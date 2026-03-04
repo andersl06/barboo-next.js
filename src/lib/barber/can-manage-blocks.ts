@@ -11,6 +11,23 @@ type CanManageBlocksParams = {
 
 export async function canManageBlocks(params: CanManageBlocksParams) {
   if (params.actorRole === "OWNER") {
+    if (params.actorUserId !== params.barberUserId) {
+      return { ok: true as const }
+    }
+
+    const ownerBarberProfile = await prisma.barberProfile.findUnique({
+      where: { userId: params.actorUserId },
+      select: { id: true },
+    })
+
+    if (!ownerBarberProfile) {
+      return {
+        ok: false as const,
+        status: 403,
+        error: SCHEDULE_ERRORS.BARBER_CANNOT_MANAGE_BLOCKS,
+      }
+    }
+
     return { ok: true as const }
   }
 

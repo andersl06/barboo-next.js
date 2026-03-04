@@ -4,6 +4,7 @@ import { failure, success } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
 import { hashPassword } from "@/lib/security/bcrypt"
 import { updateBarberProfileSchema } from "@/lib/validators/barber-profile-update"
+import { Prisma } from "@prisma/client"
 
 async function resolveMembership(userId: string) {
   const [ownerMembership, barberMembership] = await Promise.all([
@@ -59,6 +60,7 @@ export async function GET(req: Request) {
         where: { id: auth.user.id },
         select: {
           name: true,
+          email: true,
           phone: true,
         },
       }),
@@ -71,7 +73,9 @@ export async function GET(req: Request) {
     return success({
       ...profile,
       name: user.name,
+      email: user.email,
       phone: user.phone,
+      hasBarberMembership: membership.hasBarberMembership,
     })
   } catch (err) {
     return handleError(err)
@@ -110,6 +114,7 @@ export async function PATCH(req: Request) {
 
     const userData: {
       name?: string
+      email?: string
       phone?: string
       passwordHash?: string
     } = {}
@@ -120,6 +125,10 @@ export async function PATCH(req: Request) {
 
     if (parsed.data.phone !== undefined) {
       userData.phone = parsed.data.phone
+    }
+
+    if (parsed.data.email !== undefined) {
+      userData.email = parsed.data.email
     }
 
     if (parsed.data.newPassword) {
@@ -162,6 +171,7 @@ export async function PATCH(req: Request) {
         where: { id: auth.user.id },
         select: {
           name: true,
+          email: true,
           phone: true,
         },
       })
@@ -173,12 +183,20 @@ export async function PATCH(req: Request) {
       return {
         ...profile,
         name: user.name,
+        email: user.email,
         phone: user.phone,
+        hasBarberMembership: membership.hasBarberMembership,
       }
     })
 
     return success(updated)
   } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return failure("CONFLICT", "Email ja esta em uso.", 409, [
+        { field: "email", message: "Email ja esta em uso." },
+      ])
+    }
+
     return handleError(err)
   }
 }

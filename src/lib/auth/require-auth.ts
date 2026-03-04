@@ -7,6 +7,7 @@ export type AuthSuccess = {
     id: string
     name: string
     email: string
+    phone: string | null
     status: string
     mustChangePassword: boolean
     onboardingIntent: string
@@ -70,6 +71,7 @@ export async function requireAuth(req: Request): Promise<AuthResult> {
       id: true,
       name: true,
       email: true,
+      phone: true,
       status: true,
       mustChangePassword: true,
       onboardingIntent: true,
@@ -107,4 +109,3 @@ export async function requireAuth(req: Request): Promise<AuthResult> {
     },
   }
 }
-

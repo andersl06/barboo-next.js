@@ -26,6 +26,7 @@ type MeContextData = {
   barberBarbershopId: string | null
   barbershopStatus: string | null
   onboardingPending: boolean
+  hasBarberProfile: boolean
   hasClientLocation: boolean
   clientLocationUpdatedAt: string | null
 }
@@ -50,6 +51,7 @@ type AppointmentOverviewItem = {
     id: string
     name: string
     slug: string | null
+    logoUrl: string | null
   }
   service: {
     id: string
@@ -114,9 +116,34 @@ function formatDateTime(value: string) {
 }
 
 function statusLabel(status: AppointmentOverviewItem["status"]) {
-  if (status === "CONFIRMED") return "Confirmado"
+  if (status === "CONFIRMED") return "Concluido"
   if (status === "CANCELED") return "Cancelado"
   return "Recusado"
+}
+
+function ShopLogo({
+  logoUrl,
+  name,
+}: {
+  logoUrl: string | null
+  name: string
+}) {
+  if (logoUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={logoUrl}
+        alt={`Logo ${name}`}
+        className="h-9 w-9 rounded-lg border border-white/15 object-cover"
+      />
+    )
+  }
+
+  return (
+    <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 bg-[#111c47] text-[10px] font-semibold text-[#d7e1ff]">
+      {name.slice(0, 2).toUpperCase()}
+    </div>
+  )
 }
 
 function resolveMenuItems(scope: MenuScope, context: MeContextData | null): MenuItem[] {
@@ -151,34 +178,24 @@ function resolveMenuItems(scope: MenuScope, context: MeContextData | null): Menu
 
   return [
     { href: "/cliente/barbearias-proximas", label: "Inicio", icon: "home" },
-    {
-      href: "/cliente/agendamentos",
-      label: "Meus agendamentos",
-      icon: "calendar",
-      disabled: true,
-      soon: true,
-    },
-    {
-      href: "/cliente/favoritos",
-      label: "Favoritos",
-      icon: "heart",
-      disabled: true,
-      soon: true,
-    },
-    {
-      href: "/cliente/perfil",
-      label: "Meu perfil",
-      icon: "user",
-      disabled: true,
-      soon: true,
-    },
+    { href: "/client/agenda", label: "Meus agendamentos", icon: "calendar" },
+    { href: "/client/favorites", label: "Favoritos", icon: "heart" },
+    { href: "/client/profile", label: "Meu perfil", icon: "user" },
   ]
 }
 
 function resolveOverviewLink(scope: MenuScope) {
   if (scope === "owner") return "/owner/availability"
   if (scope === "barber") return "/barber/agenda"
-  return "/cliente/agendamentos"
+  return "/client/agenda"
+}
+
+function resolveOverviewScope(scope: MenuScope, context: MeContextData | null): MenuScope {
+  if (scope === "owner" && (context?.barberBarbershopId || context?.hasBarberProfile)) {
+    return "barber"
+  }
+
+  return scope
 }
 
 function resolveScopeQuery(scope: MenuScope) {
@@ -287,10 +304,10 @@ export function FloatingRoleMenu() {
   const hidden = shouldHideMenu(pathname)
   const scope = resolveScope(pathname)
   const hasSessionMarker = Boolean(getAccessToken())
+  const overviewScope = resolveOverviewScope(scope, context)
 
   const menuItems = useMemo(() => resolveMenuItems(scope, context), [scope, context])
-  const overviewLink = resolveOverviewLink(scope)
-  const isClientScope = scope === "client"
+  const overviewLink = resolveOverviewLink(overviewScope)
 
   const loadContext = useCallback(async () => {
     const token = getAccessToken()
@@ -324,7 +341,7 @@ export function FloatingRoleMenu() {
 
     try {
       const response = await fetch(
-        `/api/me/appointments/overview?scope=${resolveScopeQuery(scope)}`,
+        `/api/me/appointments/overview?scope=${resolveScopeQuery(overviewScope)}`,
         { cache: "no-store" }
       )
       const result = await response.json() as ApiResult<AppointmentOverviewData>
@@ -342,7 +359,7 @@ export function FloatingRoleMenu() {
     } finally {
       setLoadingOverview(false)
     }
-  }, [context, scope])
+  }, [context, overviewScope])
 
   useEffect(() => {
     void loadContext()
@@ -423,7 +440,7 @@ export function FloatingRoleMenu() {
         type="button"
         aria-label="Abrir menu de navegacao"
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 left-4 right-auto z-[1100] inline-flex h-14 w-14 items-center justify-center rounded-full border border-[#f36c20]/60 bg-[linear-gradient(180deg,#f47b34_0%,#f36c20_100%)] text-white shadow-[0_16px_35px_rgba(0,0,0,0.45)] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f36c20]/50"
+        className="fixed bottom-4 left-auto right-4 z-[1100] inline-flex h-14 w-14 items-center justify-center rounded-full border border-[#f36c20]/60 bg-[linear-gradient(180deg,#f47b34_0%,#f36c20_100%)] text-white shadow-[0_16px_35px_rgba(0,0,0,0.45)] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f36c20]/50"
       >
         <HamburgerIcon />
       </button>
@@ -439,8 +456,8 @@ export function FloatingRoleMenu() {
         role="dialog"
         aria-modal="true"
         aria-label="Menu principal"
-        className={`fixed left-0 top-0 z-[1099] h-[100svh] w-[min(390px,88vw)] rounded-r-3xl border border-white/10 border-l-0 bg-[linear-gradient(180deg,rgba(21,25,56,0.98)_0%,rgba(12,16,39,0.98)_100%)] text-[#f1f2f7] shadow-[20px_0_50px_rgba(0,0,0,0.5)] transition-transform ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed right-0 top-0 z-[1099] h-[100svh] w-[min(390px,88vw)] rounded-l-3xl border border-white/10 border-r-0 bg-[linear-gradient(180deg,rgba(21,25,56,0.98)_0%,rgba(12,16,39,0.98)_100%)] text-[#f1f2f7] shadow-[-20px_0_50px_rgba(0,0,0,0.5)] transition-transform ${
+          isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
         <div className="flex h-full flex-col">
@@ -469,13 +486,9 @@ export function FloatingRoleMenu() {
                 <h3 className="text-sm font-semibold">Proximos Agendamentos</h3>
                 <Link
                   href={overviewLink}
-                  className={`text-xs font-semibold ${
-                    isClientScope
-                      ? "pointer-events-none text-[#7f8ab0]"
-                      : "text-[#f5b28b] hover:text-[#ffd6bf]"
-                  }`}
+                  className="text-xs font-semibold text-[#f5b28b] hover:text-[#ffd6bf]"
                 >
-                  {isClientScope ? "Em breve" : "Ver todos"}
+                  Ver todos
                 </Link>
               </div>
 
@@ -485,16 +498,21 @@ export function FloatingRoleMenu() {
                 </p>
               ) : overview?.next ? (
                 <article className="rounded-xl border border-white/12 bg-[#091029]/90 p-3 text-sm">
-                  <p className="font-semibold text-[#e8edff]">{overview.next.service.name}</p>
-                  <p className="mt-1 text-xs text-[#b8c3e6]">{formatDateTime(overview.next.startAt)}</p>
-                  <p className="mt-1 text-xs text-[#cfd8f6]">{overview.next.barbershop.name}</p>
-                  {scope === "barber" ? (
+                  <div className="flex items-start gap-2.5">
+                    <ShopLogo logoUrl={overview.next.barbershop.logoUrl} name={overview.next.barbershop.name} />
+                    <div>
+                      <p className="font-semibold text-[#e8edff]">{overview.next.service.name}</p>
+                      <p className="mt-1 text-xs text-[#b8c3e6]">{formatDateTime(overview.next.startAt)}</p>
+                      <p className="mt-1 text-xs text-[#cfd8f6]">{overview.next.barbershop.name}</p>
+                    </div>
+                  </div>
+                  {overviewScope === "barber" ? (
                     <p className="mt-1 text-xs text-[#9fb0dd]">Cliente: {overview.next.clientUser.name}</p>
                   ) : null}
-                  {scope === "client" ? (
+                  {overviewScope === "client" ? (
                     <p className="mt-1 text-xs text-[#9fb0dd]">Barbeiro: {overview.next.barberUser.name}</p>
                   ) : null}
-                  {scope === "owner" ? (
+                  {overviewScope === "owner" ? (
                     <p className="mt-1 text-xs text-[#9fb0dd]">
                       {overview.next.barberUser.name} x {overview.next.clientUser.name}
                     </p>
@@ -521,14 +539,19 @@ export function FloatingRoleMenu() {
                 </p>
               ) : overview?.history ? (
                 <article className="rounded-xl border border-white/12 bg-[#091029]/90 p-3 text-sm">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-semibold text-[#e8edff]">{overview.history.service.name}</p>
+                  <div className="flex items-start justify-between gap-2.5">
+                    <div className="flex items-start gap-2.5">
+                      <ShopLogo logoUrl={overview.history.barbershop.logoUrl} name={overview.history.barbershop.name} />
+                      <div>
+                        <p className="font-semibold text-[#e8edff]">{overview.history.service.name}</p>
+                        <p className="mt-1 text-xs text-[#b8c3e6]">{formatDateTime(overview.history.startAt)}</p>
+                        <p className="mt-1 text-xs text-[#cfd8f6]">{overview.history.barbershop.name}</p>
+                      </div>
+                    </div>
                     <span className="rounded-full border border-white/15 px-2 py-0.5 text-[10px] font-semibold text-[#c9d4f5]">
                       {statusLabel(overview.history.status)}
                     </span>
                   </div>
-                  <p className="mt-1 text-xs text-[#b8c3e6]">{formatDateTime(overview.history.startAt)}</p>
-                  <p className="mt-1 text-xs text-[#cfd8f6]">{overview.history.barbershop.name}</p>
                 </article>
               ) : (
                 <p className="rounded-xl border border-dashed border-white/20 bg-[#091029]/70 p-3 text-xs text-[#c6d1ef]">

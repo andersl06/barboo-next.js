@@ -87,6 +87,7 @@ export async function GET(req: Request) {
               id: true,
               name: true,
               slug: true,
+              logoUrl: true,
             },
           },
           service: {
@@ -113,9 +114,19 @@ export async function GET(req: Request) {
       prisma.barbershopAppointment.findFirst({
         where: {
           ...baseWhere,
-          status: {
-            in: [...HISTORY_STATUSES],
-          },
+          OR: [
+            {
+              status: {
+                in: [...HISTORY_STATUSES],
+              },
+            },
+            {
+              status: "CONFIRMED",
+              startAt: {
+                lt: now,
+              },
+            },
+          ],
         },
         orderBy: {
           startAt: "desc",
@@ -131,6 +142,7 @@ export async function GET(req: Request) {
               id: true,
               name: true,
               slug: true,
+              logoUrl: true,
             },
           },
           service: {
@@ -166,9 +178,19 @@ export async function GET(req: Request) {
       prisma.barbershopAppointment.count({
         where: {
           ...baseWhere,
-          status: {
-            in: [...HISTORY_STATUSES],
-          },
+          OR: [
+            {
+              status: {
+                in: [...HISTORY_STATUSES],
+              },
+            },
+            {
+              status: "CONFIRMED",
+              startAt: {
+                lt: now,
+              },
+            },
+          ],
         },
       }),
     ])

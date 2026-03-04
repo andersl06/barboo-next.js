@@ -51,7 +51,17 @@ export async function POST(
     }
 
     const targetMembership = await ensureBarberMembership(barbershopId, barberUserId)
-    if (!targetMembership) {
+    const ownerSelfAsBarber =
+      !targetMembership
+      && membership.role === "OWNER"
+      && auth.user.id === barberUserId
+      ? await prisma.barberProfile.findUnique({
+          where: { userId: barberUserId },
+          select: { id: true },
+        })
+      : null
+
+    if (!targetMembership && !ownerSelfAsBarber) {
       return failure("NOT_FOUND", "Barbeiro nao encontrado na barbearia", 404)
     }
 

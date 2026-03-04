@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { PremiumBackground } from "@/components/background"
 import { UIButton } from "@/components/ui/UIButton"
@@ -79,11 +79,23 @@ type CreatedAppointment = {
 type FlowStep = "service" | "barber" | "slot" | "confirm" | "done"
 
 function getTodayDate() {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, "0")
-  const day = String(now.getDate()).padStart(2, "0")
-  return `${year}-${month}-${day}`
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date())
+}
+
+function addDays(date: string, days: number) {
+  const [year, month, day] = date.split("-").map((value) => Number(value))
+  const probe = new Date(Date.UTC(year, month - 1, day, 12, 0, 0))
+  probe.setUTCDate(probe.getUTCDate() + days)
+
+  const yyyy = probe.getUTCFullYear()
+  const mm = String(probe.getUTCMonth() + 1).padStart(2, "0")
+  const dd = String(probe.getUTCDate()).padStart(2, "0")
+  return `${yyyy}-${mm}-${dd}`
 }
 
 function formatCurrency(cents: number) {
@@ -146,6 +158,7 @@ export default function AgendarBarbeariaPage() {
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDate())
   const [slots, setSlots] = useState<SlotsData["items"]>([])
   const [loadingSlots, setLoadingSlots] = useState(false)
+  const [findingNextSlots, setFindingNextSlots] = useState(false)
   const [slotError, setSlotError] = useState<string | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<SlotsData["items"][number] | null>(null)
   const [creating, setCreating] = useState(false)
@@ -284,49 +297,93 @@ export default function AgendarBarbeariaPage() {
     return () => window.clearTimeout(timer)
   }, [preselectedServiceId, router, slug])
 
+  const fetchSlotsForDate = useCallback(async (date: string, updateUi: boolean) => {
+    if (!shop || !selectedService || !selectedBarber) {
+      return null
+    }
+
+    if (updateUi) {
+      setLoadingSlots(true)
+      setSlotError(null)
+      setSlots([])
+      setSelectedSlot(null)
+    }
+
+    try {
+      const query = new URLSearchParams({
+        barberId: selectedBarber.userId,
+        date,
+        serviceDuration: String(selectedService.durationMinutes),
+      })
+
+      const response = await fetch(
+        `/api/barbershops/${shop.id}/booking/slots?${query.toString()}`,
+        {
+          method: "GET",
+          cache: "no-store",
+        }
+      )
+
+      const result = (await response.json()) as ApiResult<SlotsData>
+      if (!result.success) {
+        if (updateUi) {
+          setSlotError(resolveApiError(result, "Falha ao buscar horarios disponiveis."))
+        }
+        return null
+      }
+
+      if (updateUi) {
+        setSlots(result.data.items)
+      }
+
+      return result.data.items
+    } catch {
+      if (updateUi) {
+        setSlotError("Falha de conexao ao buscar horarios.")
+      }
+      return null
+    } finally {
+      if (updateUi) {
+        setLoadingSlots(false)
+      }
+    }
+  }, [selectedBarber, selectedService, shop])
+
+  const findNextAvailableDate = useCallback(async () => {
+    if (!shop || !selectedService || !selectedBarber) return
+
+    setFindingNextSlots(true)
+    setSlotError(null)
+    try {
+      for (let offset = 1; offset <= 14; offset += 1) {
+        const candidateDate = addDays(selectedDate, offset)
+        const items = await fetchSlotsForDate(candidateDate, false)
+        if (items && items.length > 0) {
+          setSelectedDate(candidateDate)
+          setSlots(items)
+          setSelectedSlot(null)
+          setSlotError(null)
+          return
+        }
+      }
+
+      setSlotError("Nao encontramos horarios disponiveis nos proximos 14 dias.")
+    } finally {
+      setFindingNextSlots(false)
+    }
+  }, [fetchSlotsForDate, selectedBarber, selectedDate, selectedService, shop])
+
   useEffect(() => {
     if (!shop || !selectedService || !selectedBarber || step !== "slot") {
       return
     }
 
     const timer = window.setTimeout(() => {
-      void (async () => {
-        setLoadingSlots(true)
-        setSlotError(null)
-        setSlots([])
-        setSelectedSlot(null)
-        try {
-          const query = new URLSearchParams({
-            barberId: selectedBarber.userId,
-            date: selectedDate,
-            serviceDuration: String(selectedService.durationMinutes),
-          })
-
-          const response = await fetch(
-            `/api/barbershops/${shop.id}/booking/slots?${query.toString()}`,
-            {
-              method: "GET",
-              cache: "no-store",
-            }
-          )
-
-          const result = (await response.json()) as ApiResult<SlotsData>
-          if (!result.success) {
-            setSlotError(resolveApiError(result, "Falha ao buscar horarios disponiveis."))
-            return
-          }
-
-          setSlots(result.data.items)
-        } catch {
-          setSlotError("Falha de conexao ao buscar horarios.")
-        } finally {
-          setLoadingSlots(false)
-        }
-      })()
+      void fetchSlotsForDate(selectedDate, true)
     }, 0)
 
     return () => window.clearTimeout(timer)
-  }, [selectedBarber, selectedDate, selectedService, shop, step])
+  }, [fetchSlotsForDate, selectedBarber, selectedDate, selectedService, shop, step])
 
   async function onCreateAppointment() {
     if (!shop || !selectedService || !selectedBarber || !selectedSlot || !token) {
@@ -403,7 +460,7 @@ export default function AgendarBarbeariaPage() {
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Agendamento</p>
-            <h1 className="text-2xl font-bold md:text-3xl">{shop?.name}</h1>
+            <h1 className="text-2xl font-bold md:text-3xl">Novo agendamento</h1>
           </div>
           <Link
             href={`/barbearias/${slug}`}
@@ -413,13 +470,13 @@ export default function AgendarBarbeariaPage() {
           </Link>
         </header>
 
-        <div className="mt-4 grid grid-cols-4 gap-2 text-xs md:text-sm">
+        <div className="mt-4 grid grid-cols-4 gap-2">
           {[
             { id: "service", label: "Servico" },
             { id: "barber", label: "Barbeiro" },
             { id: "slot", label: "Horario" },
             { id: "confirm", label: "Confirmacao" },
-          ].map((item, index) => {
+          ].map((item) => {
             const order: FlowStep[] = ["service", "barber", "slot", "confirm", "done"]
             const current = order.indexOf(step)
             const own = order.indexOf(item.id as FlowStep)
@@ -427,14 +484,13 @@ export default function AgendarBarbeariaPage() {
             return (
               <div
                 key={item.id}
-                className={`rounded-lg border px-2.5 py-2 text-center ${
+                className={`h-2 rounded-full transition ${
                   isActive
-                    ? "border-[#f36c20]/55 bg-[#f36c20]/16 text-[#ffe4d4]"
-                    : "border-white/12 bg-[#0b1438]/65 text-[#aeb8db]"
+                    ? "bg-[#f36c20] shadow-[0_0_12px_rgba(243,108,32,0.45)]"
+                    : "bg-white/14"
                 }`}
-              >
-                {index + 1}. {item.label}
-              </div>
+                aria-label={`Etapa ${item.label}`}
+              />
             )
           })}
         </div>
@@ -447,7 +503,7 @@ export default function AgendarBarbeariaPage() {
 
         {step === "service" ? (
           <section className="mt-5 rounded-2xl border border-white/12 bg-[#0b1330]/84 p-4 md:p-5">
-            <h2 className="text-lg font-semibold">1. Escolha o servico</h2>
+            <h2 className="text-lg font-semibold">Escolha o servico</h2>
 
             <div className="mt-3 flex flex-wrap gap-2">
               {serviceGroups.map((group) => (
@@ -504,7 +560,7 @@ export default function AgendarBarbeariaPage() {
 
         {step === "barber" ? (
           <section className="mt-5 rounded-2xl border border-white/12 bg-[#0b1330]/84 p-4 md:p-5">
-            <h2 className="text-lg font-semibold">2. Escolha o barbeiro</h2>
+            <h2 className="text-lg font-semibold">Escolha o barbeiro</h2>
             <p className="mt-1 text-sm text-[#b8c5ea]">
               Servico selecionado: <span className="font-semibold text-[#f3f6ff]">{selectedService?.name}</span>
             </p>
@@ -555,7 +611,7 @@ export default function AgendarBarbeariaPage() {
 
         {step === "slot" ? (
           <section className="mt-5 rounded-2xl border border-white/12 bg-[#0b1330]/84 p-4 md:p-5">
-            <h2 className="text-lg font-semibold">3. Escolha o horario</h2>
+            <h2 className="text-lg font-semibold">Escolha o horario</h2>
             <p className="mt-1 text-sm text-[#b8c5ea]">
               {selectedService?.name} com <span className="font-semibold text-[#f3f6ff]">{selectedBarber?.name}</span>
             </p>
@@ -570,6 +626,11 @@ export default function AgendarBarbeariaPage() {
                 className="mt-1.5 w-full rounded-lg border border-white/14 bg-[#09112d]/80 px-3 py-2 text-sm text-[#eef3ff] outline-none focus:border-[#6aa3ff]/55"
               />
             </label>
+            {selectedDate === getTodayDate() ? (
+              <p className="mt-2 text-xs text-[#aeb8db]">
+                Para hoje, apenas horarios futuros ficam disponiveis.
+              </p>
+            ) : null}
 
             {slotError ? (
               <p className="mt-3 rounded-lg border border-red-300/30 bg-red-500/10 px-3 py-2 text-sm text-red-100">
@@ -595,9 +656,22 @@ export default function AgendarBarbeariaPage() {
                   </button>
                 ))
               ) : (
-                <p className="col-span-full text-sm text-[#c6d1ef]">
-                  Nenhum horario livre para esta data.
-                </p>
+                <div className="col-span-full space-y-2">
+                  <p className="text-sm text-[#c6d1ef]">
+                    Nenhum horario livre para esta data.
+                  </p>
+                  <UIButton
+                    type="button"
+                    variant="secondary"
+                    className="!w-auto !px-3 !py-1.5 !text-xs"
+                    disabled={findingNextSlots}
+                    onClick={() => {
+                      void findNextAvailableDate()
+                    }}
+                  >
+                    {findingNextSlots ? "Buscando..." : "Buscar proxima data com horarios"}
+                  </UIButton>
+                </div>
               )}
             </div>
 
@@ -615,7 +689,7 @@ export default function AgendarBarbeariaPage() {
 
         {step === "confirm" ? (
           <section className="mt-5 rounded-2xl border border-white/12 bg-[#0b1330]/84 p-4 md:p-5">
-            <h2 className="text-lg font-semibold">4. Confirmar agendamento</h2>
+            <h2 className="text-lg font-semibold">Confirmar agendamento</h2>
 
             <div className="mt-3 space-y-2 rounded-xl border border-white/10 bg-[#0a112c]/70 p-3 text-sm">
               <p><span className="text-[#aeb8db]">Barbearia:</span> {shop?.name}</p>

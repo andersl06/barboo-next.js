@@ -33,6 +33,7 @@ model User {
   clientAppointments BarbershopAppointment[] @relation("ClientAppointments")
   barberAppointments BarbershopAppointment[] @relation("BarberAppointments")
   canceledAppointments BarbershopAppointment[] @relation("CanceledByUser")
+  favoriteBarbershops FavoriteBarbershop[]
   passwordResetTokens  PasswordResetToken[]
 
   createdAt          DateTime @default(now())
@@ -99,6 +100,7 @@ model Barbershop {
   categories         BarbershopCategory[]
   services           BarbershopService[]
   appointments       BarbershopAppointment[]
+  favoritedByUsers   FavoriteBarbershop[]
 
   createdAt          DateTime @default(now())
 
@@ -219,6 +221,21 @@ model BarbershopAppointment {
   @@index([clientUserId, startAt])
   @@index([status, startAt])
   @@map("barbershop_appointments")
+}
+
+model FavoriteBarbershop {
+  id           String   @id @default(uuid())
+  userId       String
+  barbershopId String
+  createdAt    DateTime @default(now())
+
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, barbershopId])
+  @@index([userId, createdAt])
+  @@index([barbershopId, createdAt])
+  @@map("favorite_barbershops")
 }
 
 enum MembershipRole {
