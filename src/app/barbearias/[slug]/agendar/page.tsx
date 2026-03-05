@@ -10,6 +10,7 @@ import {
   fetchMeContext,
   getAccessToken,
 } from "@/lib/client/session"
+import { calculateAppointmentTotals } from "@/lib/finance/fees"
 
 type ApiError = {
   success: false
@@ -69,11 +70,16 @@ type SlotsData = {
 
 type CreatedAppointment = {
   id: string
-  status: "PENDING" | "CONFIRMED" | "CANCELED" | "REJECTED"
+  status: "PENDING" | "CONFIRMED" | "CANCELED" | "REJECTED" | "COMPLETED"
   startAt: string
   endAt: string
   barbershopId: string
   barbershopName: string
+  pricing?: {
+    servicePriceCents: number
+    serviceFeeCents: number
+    totalPriceCents: number
+  }
 }
 
 type FlowStep = "service" | "barber" | "slot" | "confirm" | "done"
@@ -185,6 +191,11 @@ export default function AgendarBarbeariaPage() {
 
     return groups
   }, [catalog])
+
+  const selectedPricing = useMemo(() => {
+    if (!selectedService) return null
+    return calculateAppointmentTotals(selectedService.priceCents)
+  }, [selectedService])
 
   const visibleServices = useMemo(() => {
     if (serviceGroups.length === 0) return []
@@ -695,7 +706,9 @@ export default function AgendarBarbeariaPage() {
               <p><span className="text-[#aeb8db]">Barbearia:</span> {shop?.name}</p>
               <p><span className="text-[#aeb8db]">Servico:</span> {selectedService?.name}</p>
               <p><span className="text-[#aeb8db]">Duracao:</span> {selectedService?.durationMinutes} min</p>
-              <p><span className="text-[#aeb8db]">Preco:</span> {selectedService ? formatCurrency(selectedService.priceCents) : "-"}</p>
+              <p><span className="text-[#aeb8db]">Servico:</span> {selectedPricing ? formatCurrency(selectedPricing.servicePriceCents) : "-"}</p>
+              <p><span className="text-[#aeb8db]">Taxa de servico:</span> {selectedPricing ? formatCurrency(selectedPricing.serviceFeeCents) : "-"}</p>
+              <p><span className="text-[#aeb8db]">Total:</span> {selectedPricing ? formatCurrency(selectedPricing.totalPriceCents) : "-"}</p>
               <p><span className="text-[#aeb8db]">Barbeiro:</span> {selectedBarber?.name}</p>
               <p><span className="text-[#aeb8db]">Data e hora:</span> {selectedSlot ? formatDateTime(selectedSlot.startAt) : "-"}</p>
             </div>

@@ -6,7 +6,7 @@ import { handleError } from "@/lib/http/error-handler"
 
 type AppointmentScope = "CLIENT" | "BARBER" | "OWNER"
 
-const HISTORY_STATUSES = ["CANCELED", "REJECTED"] as const
+const HISTORY_STATUSES = ["CANCELED", "REJECTED", "COMPLETED"] as const
 
 function parseScope(rawValue: string | null): AppointmentScope {
   if (rawValue === "barber") return "BARBER"

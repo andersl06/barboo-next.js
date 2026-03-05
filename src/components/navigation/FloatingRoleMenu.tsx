@@ -46,7 +46,7 @@ type AppointmentOverviewItem = {
   barbershopId: string
   startAt: string
   endAt: string
-  status: "CONFIRMED" | "CANCELED" | "REJECTED"
+  status: "CONFIRMED" | "CANCELED" | "REJECTED" | "COMPLETED"
   barbershop: {
     id: string
     name: string
@@ -116,6 +116,7 @@ function formatDateTime(value: string) {
 }
 
 function statusLabel(status: AppointmentOverviewItem["status"]) {
+  if (status === "COMPLETED") return "Concluido"
   if (status === "CONFIRMED") return "Concluido"
   if (status === "CANCELED") return "Cancelado"
   return "Recusado"

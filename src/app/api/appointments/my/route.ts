@@ -22,10 +22,14 @@ function parseLimit(value: string | null) {
 }
 
 function resolveDisplayStatus(
-  status: "PENDING" | "CONFIRMED" | "CANCELED" | "REJECTED",
+  status: "PENDING" | "CONFIRMED" | "CANCELED" | "REJECTED" | "COMPLETED",
   endAt: Date,
   now: Date
 ) {
+  if (status === "COMPLETED") {
+    return "COMPLETED" as const
+  }
+
   if (status === "CONFIRMED" && endAt.getTime() <= now.getTime()) {
     return "COMPLETED" as const
   }
@@ -87,6 +91,9 @@ export async function GET(req: Request) {
         startAt: true,
         endAt: true,
         status: true,
+        servicePriceCents: true,
+        serviceFeeCents: true,
+        totalPriceCents: true,
         canceledAt: true,
         confirmedAt: true,
         createdAt: true,
@@ -141,4 +148,3 @@ export async function GET(req: Request) {
     return handleError(err)
   }
 }
-

@@ -14,6 +14,7 @@ const ALLOWED_STATUSES: AppointmentStatus[] = [
   "CONFIRMED",
   "CANCELED",
   "REJECTED",
+  "COMPLETED",
 ]
 
 function parseStatuses(value: string | null): AppointmentStatus[] {

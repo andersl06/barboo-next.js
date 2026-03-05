@@ -76,6 +76,9 @@ model Barbershop {
   coverUrl           String?  @db.Text
 
   status             BarbershopStatus @default(EM_CONFIGURACAO)
+  financialStatus    FinancialStatus  @default(ACTIVE)
+  blockedReason      String?          @db.Text
+  blockedAt          DateTime?
 
   suspensionReason   String?   @db.Text
   suspensionUntil    DateTime? @db.Date
@@ -101,6 +104,7 @@ model Barbershop {
   services           BarbershopService[]
   appointments       BarbershopAppointment[]
   favoritedByUsers   FavoriteBarbershop[]
+  weeklyInvoices     WeeklyInvoice[]
 
   createdAt          DateTime @default(now())
 
@@ -199,6 +203,9 @@ model BarbershopAppointment {
   serviceId        String
   clientUserId     String
   barberUserId     String
+  servicePriceCents Int
+  serviceFeeCents   Int
+  totalPriceCents   Int
   startAt          DateTime
   endAt            DateTime
   status           AppointmentStatus @default(PENDING)
@@ -215,12 +222,50 @@ model BarbershopAppointment {
   clientUser       User              @relation("ClientAppointments", fields: [clientUserId], references: [id], onDelete: Cascade)
   barberUser       User              @relation("BarberAppointments", fields: [barberUserId], references: [id], onDelete: Cascade)
   canceledByUser   User?             @relation("CanceledByUser", fields: [canceledByUserId], references: [id], onDelete: SetNull)
+  weeklyInvoiceItems WeeklyInvoiceAppointment[]
 
   @@index([barbershopId, startAt])
   @@index([barberUserId, startAt])
   @@index([clientUserId, startAt])
   @@index([status, startAt])
   @@map("barbershop_appointments")
+}
+
+model WeeklyInvoice {
+  id                String              @id @default(uuid())
+  barbershopId      String
+  periodStart       DateTime            @db.Date
+  periodEnd         DateTime            @db.Date
+  dueAt             DateTime
+  status            FinanceInvoiceStatus @default(OPEN)
+  totalAppointments Int                 @default(0)
+  totalFeesCents    Int                 @default(0)
+  paidAt            DateTime?
+  notes             String?             @db.Text
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  barbershop        Barbershop          @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+  items             WeeklyInvoiceAppointment[]
+
+  @@unique([barbershopId, periodStart, periodEnd])
+  @@index([barbershopId, status, dueAt])
+  @@index([barbershopId, periodStart, periodEnd])
+  @@map("weekly_invoices")
+}
+
+model WeeklyInvoiceAppointment {
+  id            String                @id @default(uuid())
+  invoiceId     String
+  appointmentId String                @unique
+  createdAt     DateTime              @default(now())
+
+  invoice       WeeklyInvoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  appointment   BarbershopAppointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@unique([invoiceId, appointmentId])
+  @@index([appointmentId])
+  @@map("weekly_invoice_appointments")
 }
 
 model FavoriteBarbershop {
@@ -269,4 +314,17 @@ enum AppointmentStatus {
   CONFIRMED
   CANCELED
   REJECTED
+  COMPLETED
+}
+
+enum FinancialStatus {
+  ACTIVE
+  BLOCKED
+}
+
+enum FinanceInvoiceStatus {
+  OPEN
+  PAID
+  OVERDUE
+  VOID
 }

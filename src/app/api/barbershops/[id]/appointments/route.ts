@@ -8,6 +8,8 @@ import { requireAuth } from "@/lib/auth/require-auth"
 import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"
 import { prisma } from "@/lib/db/prisma"
 import { APPOINTMENT_ERRORS } from "@/lib/errors/appointment-errors"
+import { calculateAppointmentTotals } from "@/lib/finance/fees"
+import { refreshBarbershopFinancialState } from "@/lib/finance/invoices"
 import { getClientIp } from "@/lib/http/client-ip"
 import { failure, success } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
@@ -40,6 +42,8 @@ export async function POST(
     if ("error" in status) {
       return failure(status.code, status.message, status.status)
     }
+
+    await refreshBarbershopFinancialState(barbershopId)
 
     const parsed = createAppointmentSchema.safeParse(await req.json())
     if (!parsed.success) {
@@ -100,6 +104,8 @@ export async function POST(
           id: true,
           name: true,
           openingHours: true,
+          financialStatus: true,
+          blockedReason: true,
         },
       }),
     ])
@@ -122,6 +128,14 @@ export async function POST(
 
     if (!barbershop) {
       return failure("BARBERSHOP_NOT_FOUND", "Barbearia nao encontrada.", 404)
+    }
+
+    if (barbershop.financialStatus === "BLOCKED") {
+      return failure(
+        "BARBERSHOP_FINANCIAL_BLOCKED",
+        barbershop.blockedReason ?? "Barbearia bloqueada por pendencia financeira.",
+        403
+      )
     }
 
     const businessDate = getBusinessDateFromDate(requestedStartAt)
@@ -207,12 +221,17 @@ export async function POST(
         return null
       }
 
+      const pricing = calculateAppointmentTotals(service.priceCents)
+
       return tx.barbershopAppointment.create({
         data: {
           barbershopId,
           serviceId: service.id,
           clientUserId: auth.user.id,
           barberUserId: barber.userId,
+          servicePriceCents: pricing.servicePriceCents,
+          serviceFeeCents: pricing.serviceFeeCents,
+          totalPriceCents: pricing.totalPriceCents,
           startAt: selectedSlot.startAt,
           endAt: selectedSlot.endAt,
           status: "PENDING",
@@ -222,6 +241,9 @@ export async function POST(
           status: true,
           startAt: true,
           endAt: true,
+          servicePriceCents: true,
+          serviceFeeCents: true,
+          totalPriceCents: true,
           createdAt: true,
         },
       })
@@ -245,6 +267,11 @@ export async function POST(
           name: service.name,
           durationMinutes: service.durationMinutes,
           priceCents: service.priceCents,
+        },
+        pricing: {
+          servicePriceCents: created.servicePriceCents,
+          serviceFeeCents: created.serviceFeeCents,
+          totalPriceCents: created.totalPriceCents,
         },
         barber: {
           userId: barber.userId,

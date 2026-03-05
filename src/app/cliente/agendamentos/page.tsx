@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { PremiumBackground } from "@/components/background"
+import { SwipeConfirm } from "@/components/ui/SwipeConfirm"
 import { UIButton } from "@/components/ui/UIButton"
 import { getAccessToken } from "@/lib/client/session"
 
@@ -27,11 +28,14 @@ type AppointmentItem = {
   barberUserId: string
   startAt: string
   endAt: string
-  status: "PENDING" | "CONFIRMED" | "CANCELED" | "REJECTED"
+  status: "PENDING" | "CONFIRMED" | "CANCELED" | "REJECTED" | "COMPLETED"
   displayStatus: "PENDING" | "CONFIRMED" | "CANCELED" | "REJECTED" | "COMPLETED"
   canCancel: boolean
   latestCancelableAt: string
   isUpcoming: boolean
+  servicePriceCents: number
+  serviceFeeCents: number
+  totalPriceCents: number
   barbershop: {
     id: string
     name: string
@@ -106,6 +110,8 @@ export default function ClienteAgendamentosPage() {
   const [error, setError] = useState<string | null>(null)
   const [loadingItems, setLoadingItems] = useState(false)
   const [cancelingId, setCancelingId] = useState<string | null>(null)
+  const [pendingCancelConfirmId, setPendingCancelConfirmId] = useState<string | null>(null)
+  const [cancelSwipeKeys, setCancelSwipeKeys] = useState<Record<string, number>>({})
 
   const loadAppointments = useCallback(async (nextTab: AgendaTab) => {
     const token = getAccessToken()
@@ -133,6 +139,10 @@ export default function ClienteAgendamentosPage() {
 
       setItems(result.data.items)
       setScreen("ready")
+
+      setPendingCancelConfirmId((current) =>
+        current && result.data.items.some((item) => item.id === current) ? current : null
+      )
     } catch {
       setError("Falha de conexao ao carregar seus agendamentos.")
     } finally {
@@ -175,12 +185,25 @@ export default function ClienteAgendamentosPage() {
         return
       }
 
+      setPendingCancelConfirmId(null)
       await loadAppointments(tab)
     } catch {
       setError("Falha de conexao ao cancelar agendamento.")
     } finally {
       setCancelingId(null)
     }
+  }
+
+  function resetCancelSwipe(appointmentId: string) {
+    setCancelSwipeKeys((prev) => ({
+      ...prev,
+      [appointmentId]: (prev[appointmentId] ?? 0) + 1,
+    }))
+  }
+
+  function armCancellation(appointmentId: string) {
+    setPendingCancelConfirmId(appointmentId)
+    return true
   }
 
   if (screen === "unauthenticated") {
@@ -304,20 +327,52 @@ export default function ClienteAgendamentosPage() {
                   Data/hora: <span className="font-semibold">{formatDateTime(item.startAt)}</span>
                 </p>
                 <p className="text-sm text-[#d2daf3]">
-                  Duracao/valor: {item.service.durationMinutes} min - {formatCurrency(item.service.priceCents)}
+                  Duracao/servico: {item.service.durationMinutes} min - {formatCurrency(item.servicePriceCents)}
+                </p>
+                <p className="text-sm text-[#d2daf3]">
+                  Taxa/total: {formatCurrency(item.serviceFeeCents)} - {formatCurrency(item.totalPriceCents)}
                 </p>
 
                 {tab === "upcoming" ? (
                   <div className="mt-3">
                     {item.canCancel ? (
-                      <button
-                        type="button"
-                        onClick={() => void cancelAppointment(item.id)}
-                        disabled={cancelingId === item.id}
-                        className="rounded-lg border border-white/20 px-3 py-1.5 text-sm font-semibold text-[#d8e3ff] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
-                      >
-                        {cancelingId === item.id ? "Cancelando..." : "Cancelar"}
-                      </button>
+                      pendingCancelConfirmId === item.id ? (
+                        <div className="rounded-xl border border-[#f36c20]/35 bg-[#f36c20]/10 p-3">
+                          <p className="text-sm text-[#ffe2d2]">
+                            Confirmar cancelamento deste agendamento?
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => void cancelAppointment(item.id)}
+                              disabled={cancelingId === item.id}
+                              className="rounded-lg border border-[#ff965f]/30 bg-gradient-to-b from-[#f36c20] via-[#e0531e] to-[#cb4518] px-3 py-1.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
+                            >
+                              {cancelingId === item.id ? "Cancelando..." : "Confirmar cancelamento"}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={cancelingId === item.id}
+                              onClick={() => {
+                                setPendingCancelConfirmId(null)
+                                resetCancelSwipe(item.id)
+                              }}
+                              className="rounded-lg border border-white/20 px-3 py-1.5 text-sm font-semibold text-[#d8e3ff] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
+                            >
+                              Voltar
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <SwipeConfirm
+                          key={`${item.id}-${cancelSwipeKeys[item.id] ?? 0}`}
+                          className="max-w-[360px]"
+                          disabled={cancelingId === item.id}
+                          label="Deslize para cancelar"
+                          confirmedLabel="Pronto para cancelar"
+                          onConfirm={() => armCancellation(item.id)}
+                        />
+                      )
                     ) : (
                       <span
                         title="Voce so pode cancelar ate 30 minutos antes."
