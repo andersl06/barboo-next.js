@@ -1,7 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { usePathname } from "next/navigation"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { BarberGate } from "@/components/barber/BarberGate"
 import { BarberShell } from "@/components/barber/BarberShell"
 import { SwipeConfirm } from "@/components/ui/SwipeConfirm"
@@ -51,6 +52,9 @@ type AppointmentListData = {
   items: AppointmentItem[]
 }
 
+const POLL_VISIBLE_MS = 5000
+const POLL_HIDDEN_MS = 30000
+
 function getBusinessDateToday() {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Sao_Paulo",
@@ -80,6 +84,7 @@ function resolveError(result: ApiFailure, fallback: string) {
 }
 
 export default function BarberDashboardPage() {
+  const pathname = usePathname()
   const {
     state,
     error: accessError,
@@ -93,89 +98,169 @@ export default function BarberDashboardPage() {
   const [upcoming, setUpcoming] = useState<AppointmentItem[]>([])
   const [todayConfirmedCount, setTodayConfirmedCount] = useState(0)
   const [totalClients, setTotalClients] = useState(0)
-  const [loadingData, setLoadingData] = useState(false)
+  const [loadingSections, setLoadingSections] = useState(false)
   const [processingId, setProcessingId] = useState<string | null>(null)
+  const pollingInFlightRef = useRef(false)
 
-  const loadDashboard = useCallback(async () => {
+  const loadPendingAndUpcoming = useCallback(async (options?: { silent?: boolean }) => {
     if (!token) return
+    const silent = options?.silent ?? false
 
-    setError(null)
-    setLoadingData(true)
+    if (!silent) {
+      setError(null)
+      setLoadingSections(true)
+    }
 
     try {
-      const today = getBusinessDateToday()
       const nowIso = new Date().toISOString()
       const headers = { Authorization: `Bearer ${token}` }
 
-      const [pendingResponse, upcomingResponse, todayResponse, clientsResponse] =
-        await Promise.all([
-          fetch("/api/barbers/me/appointments/pending?status=PENDING&limit=80", {
-            headers,
-            cache: "no-store",
-          }),
-          fetch(`/api/barbers/me/appointments/pending?status=CONFIRMED&from=${encodeURIComponent(nowIso)}&limit=12`, {
-            headers,
-            cache: "no-store",
-          }),
-          fetch(`/api/barbers/me/appointments/pending?status=CONFIRMED&date=${today}&limit=200`, {
-            headers,
-            cache: "no-store",
-          }),
-          fetch("/api/barbers/me/appointments/pending?status=CONFIRMED&limit=300", {
-            headers,
-            cache: "no-store",
-          }),
-        ])
+      const [pendingResponse, upcomingResponse] = await Promise.all([
+        fetch("/api/barbers/me/appointments/pending?status=PENDING&limit=20", {
+          headers,
+          cache: "no-store",
+        }),
+        fetch(`/api/barbers/me/appointments/pending?status=CONFIRMED&from=${encodeURIComponent(nowIso)}&limit=20`, {
+          headers,
+          cache: "no-store",
+        }),
+      ])
 
-      const [pendingResult, upcomingResult, todayResult, clientsResult] =
-        await Promise.all([
-          pendingResponse.json() as Promise<ApiResult<AppointmentListData>>,
-          upcomingResponse.json() as Promise<ApiResult<AppointmentListData>>,
-          todayResponse.json() as Promise<ApiResult<AppointmentListData>>,
-          clientsResponse.json() as Promise<ApiResult<AppointmentListData>>,
-        ])
+      const [pendingResult, upcomingResult] = await Promise.all([
+        pendingResponse.json() as Promise<ApiResult<AppointmentListData>>,
+        upcomingResponse.json() as Promise<ApiResult<AppointmentListData>>,
+      ])
 
       if (!pendingResult.success) {
         if (pendingResult.code === "UNAUTHORIZED") {
           clearAccessToken()
         }
-        setError(resolveError(pendingResult, "Falha ao carregar pendentes."))
+        if (!silent) {
+          setError(resolveError(pendingResult, "Falha ao carregar pendentes."))
+        }
         return
       }
 
       if (!upcomingResult.success) {
-        setError(resolveError(upcomingResult, "Falha ao carregar proximos atendimentos."))
-        return
-      }
-
-      if (!todayResult.success) {
-        setError(resolveError(todayResult, "Falha ao carregar metricas de hoje."))
-        return
-      }
-
-      if (!clientsResult.success) {
-        setError(resolveError(clientsResult, "Falha ao carregar total de clientes."))
+        if (!silent) {
+          setError(resolveError(upcomingResult, "Falha ao carregar proximos atendimentos."))
+        }
         return
       }
 
       setPending(pendingResult.data.items)
       setUpcoming(upcomingResult.data.items)
+    } catch {
+      if (!silent) {
+        setError("Falha de conexao ao carregar o dashboard do barbeiro.")
+      }
+    } finally {
+      if (!silent) {
+        setLoadingSections(false)
+      }
+    }
+  }, [token])
+
+  const loadMetrics = useCallback(async () => {
+    if (!token) return
+
+    try {
+      const today = getBusinessDateToday()
+      const headers = { Authorization: `Bearer ${token}` }
+
+      const [todayResponse, clientsResponse] = await Promise.all([
+        fetch(`/api/barbers/me/appointments/pending?status=CONFIRMED&date=${today}&limit=200`, {
+          headers,
+          cache: "no-store",
+        }),
+        fetch("/api/barbers/me/appointments/pending?status=CONFIRMED&limit=300", {
+          headers,
+          cache: "no-store",
+        }),
+      ])
+
+      const [todayResult, clientsResult] = await Promise.all([
+        todayResponse.json() as Promise<ApiResult<AppointmentListData>>,
+        clientsResponse.json() as Promise<ApiResult<AppointmentListData>>,
+      ])
+
+      if (!todayResult.success) return
+      if (!clientsResult.success) return
+
       setTodayConfirmedCount(todayResult.data.items.length)
       setTotalClients(new Set(clientsResult.data.items.map((item) => item.clientUser.id)).size)
     } catch {
-      setError("Falha de conexao ao carregar o dashboard do barbeiro.")
-    } finally {
-      setLoadingData(false)
+      // Mantem silencioso para nao poluir UX com erro fora das secoes de polling.
     }
   }, [token])
 
   useEffect(() => {
     if (state !== "ready") return
     const timer = window.setTimeout(() => {
-      void loadDashboard()
+      void loadPendingAndUpcoming()
+      void loadMetrics()
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [state, loadDashboard])
+  }, [state, loadMetrics, loadPendingAndUpcoming])
+
+  useEffect(() => {
+    const isBarberPollingRoute = pathname === "/barber/dashboard" || pathname === "/barber/agenda"
+    if (state !== "ready" || !token || !isBarberPollingRoute) {
+      return
+    }
+
+    let timeoutId: number | null = null
+    let cancelled = false
+
+    const runPollingRevalidation = async () => {
+      if (cancelled || pollingInFlightRef.current) return
+      pollingInFlightRef.current = true
+      try {
+        await loadPendingAndUpcoming({ silent: true })
+      } finally {
+        pollingInFlightRef.current = false
+      }
+    }
+
+    const scheduleNext = () => {
+      if (cancelled) return
+      const delay = document.visibilityState === "visible" ? POLL_VISIBLE_MS : POLL_HIDDEN_MS
+      timeoutId = window.setTimeout(async () => {
+        await runPollingRevalidation()
+        scheduleNext()
+      }, delay)
+    }
+
+    const revalidateNow = async () => {
+      if (cancelled) return
+      if (timeoutId) {
+        window.clearTimeout(timeoutId)
+        timeoutId = null
+      }
+      await runPollingRevalidation()
+      scheduleNext()
+    }
+
+    scheduleNext()
+    const onVisibilityChange = () => {
+      void revalidateNow()
+    }
+    const onWindowFocus = () => {
+      void revalidateNow()
+    }
+
+    document.addEventListener("visibilitychange", onVisibilityChange)
+    window.addEventListener("focus", onWindowFocus)
+
+    return () => {
+      cancelled = true
+      if (timeoutId) {
+        window.clearTimeout(timeoutId)
+      }
+      document.removeEventListener("visibilitychange", onVisibilityChange)
+      window.removeEventListener("focus", onWindowFocus)
+    }
+  }, [loadPendingAndUpcoming, pathname, state, token])
 
   async function handleAction(item: AppointmentItem, action: "confirm" | "reject") {
     if (!token) return false
@@ -288,10 +373,12 @@ export default function BarberDashboardPage() {
             type="button"
             variant="secondary"
             className="!w-auto !px-4 !py-1.5 !text-sm"
-            onClick={loadDashboard}
-            disabled={loadingData}
+            onClick={() => {
+              void loadPendingAndUpcoming()
+            }}
+            disabled={loadingSections}
           >
-            {loadingData ? "Atualizando..." : "Atualizar"}
+            {loadingSections ? "Atualizando..." : "Atualizar"}
           </UIButton>
         </div>
 

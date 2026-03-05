@@ -76,15 +76,17 @@ function getLocationLabel(origin: NearbyData["origin"] | null, items: NearbyItem
 
 function CardSkeleton() {
   return (
-    <article className="animate-pulse rounded-2xl border border-white/10 bg-[#0b1330]/80 p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="h-11 w-11 rounded-xl bg-white/10" />
-        <div className="h-5 w-16 rounded-full bg-white/10" />
+    <article className="animate-pulse overflow-hidden rounded-2xl border border-white/10 bg-[#0b1330]/80">
+      <div className="h-28 bg-white/10" />
+      <div className="p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="h-5 w-2/3 rounded bg-white/10" />
+          <div className="h-5 w-16 rounded-full bg-white/10" />
+        </div>
+        <div className="mt-2 h-4 w-1/2 rounded bg-white/10" />
+        <div className="mt-2 h-4 w-1/3 rounded bg-white/10" />
+        <div className="mt-4 h-9 w-full rounded-xl bg-white/10" />
       </div>
-      <div className="mt-3 h-5 w-2/3 rounded bg-white/10" />
-      <div className="mt-2 h-4 w-1/2 rounded bg-white/10" />
-      <div className="mt-2 h-4 w-1/3 rounded bg-white/10" />
-      <div className="mt-4 h-9 w-full rounded-xl bg-white/10" />
     </article>
   )
 }
@@ -355,78 +357,92 @@ export default function BarbeariasProximasPage() {
               return (
                 <article
                   key={item.id}
-                  className="rounded-2xl border border-white/12 bg-[#0b1330]/85 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.35)]"
+                  className="overflow-hidden rounded-2xl border border-white/12 bg-[#0b1330]/85 shadow-[0_16px_40px_rgba(0,0,0,0.35)]"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-3">
-                      {item.logoUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={item.logoUrl}
-                          alt={`Logo ${item.name}`}
-                          className="h-11 w-11 rounded-xl border border-white/15 object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-[#121d48] text-xs font-semibold text-[#d5e0ff]">
-                          {item.name.slice(0, 2).toUpperCase()}
-                        </div>
-                      )}
+                  <div className="relative h-28 border-b border-white/10 bg-[#101a44]">
+                    {item.coverUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={item.coverUrl}
+                        alt={`Capa ${item.name}`}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(80%_100%_at_0%_0%,rgba(71,100,215,0.35),rgba(13,19,47,0.95)_55%,rgba(8,12,31,0.98)_100%)]">
+                        {item.logoUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={item.logoUrl}
+                            alt={`Logo ${item.name}`}
+                            className="h-12 w-12 rounded-xl border border-white/20 object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/20 bg-[#121d48] text-sm font-semibold text-[#d5e0ff]">
+                            {item.name.slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#07102d]/55 to-transparent" />
+                  </div>
 
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <h2 className="truncate text-lg font-semibold">{item.name}</h2>
                         <p className="truncate text-xs text-[#a7b1d0]">
                           {[item.neighborhood, item.city].filter(Boolean).join(" - ") || "Local nao informado"}
                         </p>
                       </div>
+                      <span className="rounded-full border border-[#6aa3ff]/35 bg-[#6aa3ff]/15 px-2 py-0.5 text-xs font-semibold text-[#cfe0ff]">
+                        {item.distanceKm.toFixed(1)} km
+                      </span>
                     </div>
-                    <span className="rounded-full border border-[#6aa3ff]/35 bg-[#6aa3ff]/15 px-2 py-0.5 text-xs font-semibold text-[#cfe0ff]">
-                      {item.distanceKm.toFixed(1)} km
-                    </span>
-                  </div>
 
-                  <div className="mt-3 flex items-center gap-2 text-xs text-[#cdd7f6]">
-                    {item.rating !== null ? (
-                      <span className="rounded-full border border-amber-300/30 bg-amber-500/10 px-2 py-0.5 font-semibold text-amber-100">
-                        {item.rating.toFixed(1)} ({item.ratingCount})
-                      </span>
-                    ) : (
-                      <span className="rounded-full border border-white/15 px-2 py-0.5 text-[#9eabd4]">Sem avaliacoes</span>
-                    )}
+                    <div className="mt-3 flex items-center gap-2 text-xs text-[#cdd7f6]">
+                      {item.rating !== null ? (
+                        <span className="rounded-full border border-amber-300/30 bg-amber-500/10 px-2 py-0.5 font-semibold text-amber-100">
+                          {item.rating.toFixed(1)} ({item.ratingCount})
+                        </span>
+                      ) : (
+                        <span className="rounded-full border border-white/15 px-2 py-0.5 text-[#9eabd4]">Sem avaliacoes</span>
+                      )}
 
-                    {item.avgPrice !== null ? (
-                      <span>Preco medio R$ {item.avgPrice.toFixed(2)}</span>
-                    ) : (
-                      <span className="text-[#9eabd4]">Preco medio indisponivel</span>
-                    )}
-                  </div>
+                      {item.avgPrice !== null ? (
+                        <span>Preco medio R$ {item.avgPrice.toFixed(2)}</span>
+                      ) : (
+                        <span className="text-[#9eabd4]">Preco medio indisponivel</span>
+                      )}
+                    </div>
 
-                  <div className="mt-4 flex items-center gap-2">
-                    {item.slug ? (
-                      <Link
-                        href={`/barbearias/${item.slug}`}
-                        className="inline-flex flex-1 items-center justify-center rounded-xl border border-[#ff965f]/30 bg-gradient-to-b from-[#f36c20] via-[#e0531e] to-[#cb4518] px-3 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(243,108,32,0.25),inset_0_1px_0_rgba(255,255,255,0.22)] transition hover:brightness-110"
+                    <div className="mt-4 flex items-center gap-2">
+                      {item.slug ? (
+                        <Link
+                          href={`/barbearias/${item.slug}`}
+                          className="inline-flex flex-1 items-center justify-center rounded-xl border border-[#ff965f]/30 bg-gradient-to-b from-[#f36c20] via-[#e0531e] to-[#cb4518] px-3 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(243,108,32,0.25),inset_0_1px_0_rgba(255,255,255,0.22)] transition hover:brightness-110"
+                        >
+                          Ver barbearia
+                        </Link>
+                      ) : (
+                        <span className="inline-flex flex-1 items-center justify-center rounded-xl border border-white/10 bg-[#111c47] px-3 py-2 text-sm font-semibold text-[#95a5d7]">
+                          Link indisponivel
+                        </span>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => void toggleFavorite(item)}
+                        disabled={isFavoriteBusy}
+                        className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border text-sm transition ${
+                          item.isFavorited
+                            ? "border-[#f36c20]/45 bg-[#f36c20]/18 text-[#ffd6bf]"
+                            : "border-white/15 bg-[#0d173d] text-[#d7e1ff] hover:bg-[#152154]"
+                        } disabled:cursor-not-allowed disabled:opacity-70`}
+                        title={item.isFavorited ? "Desfavoritar" : "Favoritar"}
                       >
-                        Ver barbearia
-                      </Link>
-                    ) : (
-                      <span className="inline-flex flex-1 items-center justify-center rounded-xl border border-white/10 bg-[#111c47] px-3 py-2 text-sm font-semibold text-[#95a5d7]">
-                        Link indisponivel
-                      </span>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => void toggleFavorite(item)}
-                      disabled={isFavoriteBusy}
-                      className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border text-sm transition ${
-                        item.isFavorited
-                          ? "border-[#f36c20]/45 bg-[#f36c20]/18 text-[#ffd6bf]"
-                          : "border-white/15 bg-[#0d173d] text-[#d7e1ff] hover:bg-[#152154]"
-                      } disabled:cursor-not-allowed disabled:opacity-70`}
-                      title={item.isFavorited ? "Desfavoritar" : "Favoritar"}
-                    >
-                      <HeartIcon filled={item.isFavorited} />
-                    </button>
+                        <HeartIcon filled={item.isFavorited} />
+                      </button>
+                    </div>
                   </div>
                 </article>
               )
@@ -437,4 +453,3 @@ export default function BarbeariasProximasPage() {
     </main>
   )
 }
-
