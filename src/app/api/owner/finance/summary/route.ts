@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db/prisma"
+import { markPastConfirmedAppointmentsAsCompleted } from "@/lib/finance/appointments"
 import { requireOwnerFinanceContext } from "@/lib/finance/owner-context"
-import { refreshBarbershopFinancialState } from "@/lib/finance/invoices"
+import { getWeeklyPeriod, refreshBarbershopFinancialState, resolveInvoiceStatusTotals } from "@/lib/finance/invoices"
 import { failure, success } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
 
@@ -36,12 +37,21 @@ export async function GET(req: Request) {
       return failure(context.code, context.message, context.status)
     }
 
+    await markPastConfirmedAppointmentsAsCompleted(context.barbershopId)
     await refreshBarbershopFinancialState(context.barbershopId)
 
     const url = new URL(req.url)
     const { month, start, end } = resolveMonthRange(url.searchParams.get("month"))
+    const week = getWeeklyPeriod()
 
-    const [appointmentsCount, aggregate, barbershop] = await Promise.all([
+    const [
+      appointmentsCount,
+      aggregate,
+      weeklyAppointmentsCount,
+      weeklyAggregate,
+      barbershop,
+      invoiceStatusTotals,
+    ] = await Promise.all([
       prisma.barbershopAppointment.count({
         where: {
           barbershopId: context.barbershopId,
@@ -70,6 +80,35 @@ export async function GET(req: Request) {
           totalPriceCents: true,
         },
       }),
+      prisma.barbershopAppointment.count({
+        where: {
+          barbershopId: context.barbershopId,
+          status: {
+            in: ["CONFIRMED", "COMPLETED"],
+          },
+          startAt: {
+            gte: week.periodStartAt,
+            lt: week.periodEndExclusiveAt,
+          },
+        },
+      }),
+      prisma.barbershopAppointment.aggregate({
+        where: {
+          barbershopId: context.barbershopId,
+          status: {
+            in: ["CONFIRMED", "COMPLETED"],
+          },
+          startAt: {
+            gte: week.periodStartAt,
+            lt: week.periodEndExclusiveAt,
+          },
+        },
+        _sum: {
+          servicePriceCents: true,
+          serviceFeeCents: true,
+          totalPriceCents: true,
+        },
+      }),
       prisma.barbershop.findUnique({
         where: { id: context.barbershopId },
         select: {
@@ -78,6 +117,7 @@ export async function GET(req: Request) {
           blockedAt: true,
         },
       }),
+      resolveInvoiceStatusTotals(context.barbershopId),
     ])
 
     return success({
@@ -85,6 +125,11 @@ export async function GET(req: Request) {
       monthlyAppointmentsCount: appointmentsCount,
       monthlyServiceAmountCents: aggregate._sum.servicePriceCents ?? 0,
       monthlyTotalAmountCents: aggregate._sum.totalPriceCents ?? 0,
+      weeklyAppointmentsCount,
+      weeklyServiceAmountCents: weeklyAggregate._sum.servicePriceCents ?? 0,
+      weeklyFeeAmountCents: weeklyAggregate._sum.serviceFeeCents ?? 0,
+      weeklyTotalAmountCents: weeklyAggregate._sum.totalPriceCents ?? 0,
+      invoiceStatusTotals,
       financialStatus: barbershop?.financialStatus ?? "ACTIVE",
       blockedReason: barbershop?.blockedReason ?? null,
       blockedAt: barbershop?.blockedAt ?? null,
@@ -93,4 +138,3 @@ export async function GET(req: Request) {
     return handleError(err)
   }
 }
-

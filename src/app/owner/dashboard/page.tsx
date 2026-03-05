@@ -27,27 +27,26 @@ type BarbershopData = {
   slug: string | null
 }
 
-type CategoryData = {
-  id: string
-  isActive: boolean
-}
-
-type ServiceData = {
-  id: string
-  isActive: boolean
-}
-
-type TeamData = {
-  userId: string
-  role: "OWNER" | "BARBER"
-  isActive: boolean
-}
-
 type DashboardData = {
   barbershop: BarbershopData
-  categories: CategoryData[]
-  services: ServiceData[]
-  team: TeamData[]
+  finance: {
+    monthlyAppointmentsCount: number
+    monthlyServiceAmountCents: number
+    monthlyTotalAmountCents: number
+    weeklyAppointmentsCount: number
+    weeklyServiceAmountCents: number
+    weeklyFeeAmountCents: number
+    weeklyTotalAmountCents: number
+    invoiceStatusTotals: {
+      OPEN: number
+      PAID: number
+      OVERDUE: number
+      VOID: number
+    }
+    financialStatus: "ACTIVE" | "BLOCKED"
+    blockedReason: string | null
+    blockedAt: string | null
+  }
 }
 
 const CARD_LINKS = [
@@ -90,6 +89,21 @@ function resolveErrorMessage(result: ApiFailure, fallback: string) {
   return result.message || fallback
 }
 
+function formatCurrency(cents: number) {
+  return (cents / 100).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  })
+}
+
+function getBusinessMonth() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+  }).format(new Date()).slice(0, 7)
+}
+
 export default function OwnerDashboardPage() {
   const {
     state,
@@ -111,28 +125,18 @@ export default function OwnerDashboardPage() {
         Authorization: `Bearer ${token}`,
       }
 
-      const [shopResponse, categoryResponse, serviceResponse, teamResponse] =
+      const [shopResponse, financeResponse] =
         await Promise.all([
           fetch(`/api/barbershops/${ownerBarbershopId}`, { headers, cache: "no-store" }),
-          fetch(`/api/barbershops/${ownerBarbershopId}/categories?includeInactive=true`, {
-            headers,
-            cache: "no-store",
-          }),
-          fetch(`/api/barbershops/${ownerBarbershopId}/services?includeInactive=true`, {
-            headers,
-            cache: "no-store",
-          }),
-          fetch(`/api/barbershops/${ownerBarbershopId}/barbers`, {
+          fetch(`/api/owner/finance/summary?month=${encodeURIComponent(getBusinessMonth())}`, {
             headers,
             cache: "no-store",
           }),
         ])
 
-      const [shopResult, categoryResult, serviceResult, teamResult] = (await Promise.all([
+      const [shopResult, financeResult] = (await Promise.all([
         shopResponse.json() as Promise<ApiResult<BarbershopData>>,
-        categoryResponse.json() as Promise<ApiResult<CategoryData[]>>,
-        serviceResponse.json() as Promise<ApiResult<ServiceData[]>>,
-        teamResponse.json() as Promise<ApiResult<TeamData[]>>,
+        financeResponse.json() as Promise<ApiResult<DashboardData["finance"]>>,
       ]))
 
       if (!shopResult.success) {
@@ -140,26 +144,14 @@ export default function OwnerDashboardPage() {
         return
       }
 
-      if (!categoryResult.success) {
-        setError(resolveErrorMessage(categoryResult, "Falha ao carregar categorias."))
-        return
-      }
-
-      if (!serviceResult.success) {
-        setError(resolveErrorMessage(serviceResult, "Falha ao carregar servicos."))
-        return
-      }
-
-      if (!teamResult.success) {
-        setError(resolveErrorMessage(teamResult, "Falha ao carregar equipe."))
+      if (!financeResult.success) {
+        setError(resolveErrorMessage(financeResult, "Falha ao carregar resumo financeiro."))
         return
       }
 
       setData({
         barbershop: shopResult.data,
-        categories: categoryResult.data,
-        services: serviceResult.data,
-        team: teamResult.data,
+        finance: financeResult.data,
       })
     } catch {
       setError("Falha de conexao ao carregar o dashboard.")
@@ -203,23 +195,50 @@ export default function OwnerDashboardPage() {
         </p>
       ) : null}
 
+      {data?.finance.financialStatus === "BLOCKED" ? (
+        <p className="mt-3 rounded-xl border border-red-300/35 bg-red-500/12 px-3.5 py-2.5 text-sm text-red-100">
+          Sua barbearia esta bloqueada por pendencia financeira. Regularize para voltar a receber agendamentos.
+        </p>
+      ) : null}
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <article className="rounded-2xl border border-white/12 bg-[#0b1330]/85 p-4">
-          <p className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Categorias ativas</p>
+          <p className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Ganhos da semana</p>
           <p className="mt-1 text-2xl font-bold">
-            {data ? data.categories.filter((item) => item.isActive).length : "-"}
+            {data ? formatCurrency(data.finance.weeklyServiceAmountCents) : "--"}
           </p>
         </article>
         <article className="rounded-2xl border border-white/12 bg-[#0b1330]/85 p-4">
-          <p className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Servicos ativos</p>
+          <p className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Total semana (cliente)</p>
           <p className="mt-1 text-2xl font-bold">
-            {data ? data.services.filter((item) => item.isActive).length : "-"}
+            {data ? formatCurrency(data.finance.weeklyTotalAmountCents) : "--"}
           </p>
         </article>
         <article className="rounded-2xl border border-white/12 bg-[#0b1330]/85 p-4">
-          <p className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Equipe ativa</p>
+          <p className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Agendamentos na semana</p>
           <p className="mt-1 text-2xl font-bold">
-            {data ? data.team.filter((item) => item.isActive).length : "-"}
+            {data ? data.finance.weeklyAppointmentsCount : "--"}
+          </p>
+        </article>
+        <article className="rounded-2xl border border-white/12 bg-[#0b1330]/85 p-4">
+          <p className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Faturas abertas</p>
+          <p className="mt-1 text-2xl font-bold">
+            {data ? data.finance.invoiceStatusTotals.OPEN : "--"}
+          </p>
+        </article>
+        <article className="rounded-2xl border border-white/12 bg-[#0b1330]/85 p-4">
+          <p className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Faturas vencidas</p>
+          <p className="mt-1 text-2xl font-bold">
+            {data ? data.finance.invoiceStatusTotals.OVERDUE : "--"}
+          </p>
+        </article>
+        <article className="rounded-2xl border border-white/12 bg-[#0b1330]/85 p-4">
+          <p className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Valor do mes (servicos)</p>
+          <p className="mt-1 text-2xl font-bold">
+            {data ? formatCurrency(data.finance.monthlyServiceAmountCents) : "--"}
+          </p>
+          <p className="mt-1 text-xs text-[#9eabd4]">
+            {data ? `${data.finance.monthlyAppointmentsCount} agendamentos no mes` : ""}
           </p>
         </article>
       </div>

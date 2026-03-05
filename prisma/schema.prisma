@@ -240,6 +240,14 @@ model WeeklyInvoice {
   status            FinanceInvoiceStatus @default(OPEN)
   totalAppointments Int                 @default(0)
   totalFeesCents    Int                 @default(0)
+  abacateChargeId          String?      @unique @db.VarChar(120)
+  abacateChargeStatus      String?      @db.VarChar(40)
+  abacateChargeCreatedAt   DateTime?
+  abacateChargeExpiresAt   DateTime?
+  abacateQrCodeImageUrl    String?      @db.Text
+  abacateQrCodeCopyPaste   String?      @db.Text
+  abacatePaidAmountCents   Int?
+  abacatePaidAt            DateTime?
   paidAt            DateTime?
   notes             String?             @db.Text
   createdAt         DateTime            @default(now())

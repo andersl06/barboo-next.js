@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma"
+import { markPastConfirmedAppointmentsAsCompleted } from "@/lib/finance/appointments"
 import { requireOwnerFinanceContext } from "@/lib/finance/owner-context"
 import { refreshBarbershopFinancialState } from "@/lib/finance/invoices"
 import { failure, success } from "@/lib/http/api-response"
@@ -11,6 +12,7 @@ export async function GET(req: Request) {
       return failure(context.code, context.message, context.status)
     }
 
+    await markPastConfirmedAppointmentsAsCompleted(context.barbershopId)
     await refreshBarbershopFinancialState(context.barbershopId)
 
     const [invoices, barbershop] = await Promise.all([
@@ -95,4 +97,3 @@ export async function GET(req: Request) {
     return handleError(err)
   }
 }
-

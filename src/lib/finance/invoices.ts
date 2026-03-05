@@ -1,4 +1,4 @@
-import type { FinanceInvoiceStatus, PrismaClient } from "@prisma/client"
+import type { FinanceInvoiceStatus, Prisma, PrismaClient } from "@prisma/client"
 import { prisma } from "@/lib/db/prisma"
 
 const BUSINESS_TIMEZONE = "America/Sao_Paulo"
@@ -24,7 +24,7 @@ function addDays(date: string, days: number) {
   return `${yyyy}-${mm}-${dd}`
 }
 
-function parseBusinessDateToUtc(date: string) {
+export function parseBusinessDateToUtc(date: string) {
   return new Date(`${date}T00:00:00.000-03:00`)
 }
 
@@ -69,7 +69,7 @@ export function formatPeriodLabel(start: Date, end: Date) {
 
 export async function refreshBarbershopFinancialState(
   barbershopId: string,
-  client?: PrismaClient
+  client?: PrismaClient | Prisma.TransactionClient
 ) {
   const db = client ?? prisma
   const now = new Date()
@@ -149,4 +149,3 @@ export async function resolveInvoiceStatusTotals(barbershopId: string, client?: 
 
   return totals
 }
-

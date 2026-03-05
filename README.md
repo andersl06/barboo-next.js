@@ -275,3 +275,31 @@ npx prisma migrate deploy
 ```
 
 4. Redeploy na Vercel e teste o fluxo completo.
+
+## Cobranca semanal via AbacatePay (PIX)
+
+Fluxo implementado para OWNER em `/owner/finance`:
+
+- Botao `Pagar fatura` cria cobranca PIX no backend.
+- Modal mostra QR Code, codigo copia e cola, valor e expiracao.
+- Polling de status a cada 1s por ate 5 minutos (com backoff leve em 429).
+- Quando pago, a fatura muda para `PAID`.
+- Se nao confirmar em 5 minutos, a fatura continua pendente e o modal permite gerar novo QR.
+
+### Variavel de ambiente
+
+```env
+ABACATEPAY_API_KEY="seu-token-abacatepay"
+```
+
+### Endpoints
+
+- `POST /api/billing/invoices/:invoiceId/pay`
+- `GET /api/billing/charges/:chargeId/status`
+
+### Teste rapido em desenvolvimento
+
+1. Gere uma fatura semanal em `/owner/finance`.
+2. Clique em `Pagar fatura` em uma fatura `OPEN/OVERDUE`.
+3. Pague o PIX pelo QR ou copia e cola.
+4. Aguarde o status virar `PAID` no modal e na lista.

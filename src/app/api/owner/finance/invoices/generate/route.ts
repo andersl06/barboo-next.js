@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db/prisma"
+import { markPastConfirmedAppointmentsAsCompleted } from "@/lib/finance/appointments"
 import { requireOwnerFinanceContext } from "@/lib/finance/owner-context"
-import { getWeeklyPeriod, refreshBarbershopFinancialState } from "@/lib/finance/invoices"
+import { getWeeklyPeriod, parseBusinessDateToUtc, refreshBarbershopFinancialState } from "@/lib/finance/invoices"
 import { failure, success } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
 
@@ -11,6 +12,7 @@ export async function POST(req: Request) {
       return failure(context.code, context.message, context.status)
     }
 
+    await markPastConfirmedAppointmentsAsCompleted(context.barbershopId)
     await refreshBarbershopFinancialState(context.barbershopId)
 
     const url = new URL(req.url)
@@ -21,8 +23,8 @@ export async function POST(req: Request) {
       where: {
         barbershopId_periodStart_periodEnd: {
           barbershopId: context.barbershopId,
-          periodStart: new Date(`${period.periodStartDate}T00:00:00.000Z`),
-          periodEnd: new Date(`${period.periodEndDate}T00:00:00.000Z`),
+          periodStart: parseBusinessDateToUtc(period.periodStartDate),
+          periodEnd: parseBusinessDateToUtc(period.periodEndDate),
         },
       },
       select: {
@@ -72,8 +74,8 @@ export async function POST(req: Request) {
       const createdInvoice = await tx.weeklyInvoice.create({
         data: {
           barbershopId: context.barbershopId,
-          periodStart: new Date(`${period.periodStartDate}T00:00:00.000Z`),
-          periodEnd: new Date(`${period.periodEndDate}T00:00:00.000Z`),
+          periodStart: parseBusinessDateToUtc(period.periodStartDate),
+          periodEnd: parseBusinessDateToUtc(period.periodEndDate),
           dueAt: period.dueAt,
           status: "OPEN",
           totalAppointments: appointments.length,
@@ -113,4 +115,3 @@ export async function POST(req: Request) {
     return handleError(err)
   }
 }
-
