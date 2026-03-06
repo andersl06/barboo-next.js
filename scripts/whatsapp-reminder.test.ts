@@ -43,7 +43,6 @@ run("buildWhatsappReminderLink encodes message and uses E.164 number", () => {
   assert.ok(
     decoded.includes("Olá! Quero ativar lembretes e atualizações sobre meu compromisso no Barboo.")
   )
-  assert.ok(decoded.includes("ID: apt_123"))
 })
 
 run("isWhatsappWindowOpen detects last inbound within 24h", () => {

@@ -1,4 +1,5 @@
 import { getWhatsappWindowStatus } from "@/lib/whatsapp/service"
+import { normalizeWhatsappDigits } from "@/lib/whatsapp/normalize"
 
 export type WhatsappConfirmationInput = {
   waIdDigits: string
@@ -25,8 +26,7 @@ function buildConfirmationMessage(input: WhatsappConfirmationInput) {
     `Serviço: ${input.serviceName}`,
     `Data: ${input.appointmentDate}`,
     `Horário: ${input.appointmentTime}`,
-    `Valor: ${input.price}`,
-    `ID: ${input.appointmentId}`,
+    `Valor: ${input.price}`
   ].join("\n")
 }
 
@@ -111,7 +111,7 @@ async function sendTemplateConfirmation(input: WhatsappConfirmationInput) {
 export async function sendWhatsappAppointmentConfirmation(
   input: WhatsappConfirmationInput
 ): Promise<WhatsappConfirmationResult> {
-  const waIdDigits = input.waIdDigits.replace(/\D/g, "")
+  const waIdDigits = normalizeWhatsappDigits(input.waIdDigits)
   if (!waIdDigits) {
     return { sent: false, mode: "ERROR" }
   }

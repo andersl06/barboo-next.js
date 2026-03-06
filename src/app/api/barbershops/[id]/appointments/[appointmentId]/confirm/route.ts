@@ -7,6 +7,7 @@ import { handleError } from "@/lib/http/error-handler"
 import { requireSameOrigin } from "@/lib/http/require-origin"
 import { requireMembership } from "@/lib/membership/require-membership"
 import { sendWhatsappAppointmentConfirmation } from "@/lib/whatsapp/confirmations"
+import { normalizeWhatsappDigits } from "@/lib/whatsapp/normalize"
 
 const BUSINESS_TIMEZONE = "America/Sao_Paulo"
 
@@ -122,7 +123,7 @@ export async function PATCH(
     })
 
     if (details?.clientUser.phone) {
-      const waIdDigits = details.clientUser.phone.replace(/\D/g, "")
+      const waIdDigits = normalizeWhatsappDigits(details.clientUser.phone)
       const appointmentDate = formatDate(details.startAt)
       const appointmentTime = formatTime(details.startAt)
 

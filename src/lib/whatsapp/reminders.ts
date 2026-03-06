@@ -24,7 +24,6 @@ export function isWithinNext24h(dateTime: string | Date, now = new Date()) {
 export function buildWhatsappReminderLink(payload: WhatsappReminderPayload) {
   const lines = [
     "Olá! Quero ativar lembretes e atualizações sobre meu compromisso no Barboo.",
-    payload.appointmentId ? `ID: ${payload.appointmentId}` : null,
   ].filter(Boolean)
 
   const text = lines.join("\n")
