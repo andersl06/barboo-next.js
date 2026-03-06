@@ -1,7 +1,7 @@
 ﻿"use client"
 
 import Link from "next/link"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { PremiumBackground } from "@/components/background"
 import { UIButton } from "@/components/ui/UIButton"
@@ -11,7 +11,7 @@ import {
   getAccessToken,
 } from "@/lib/client/session"
 import { calculateAppointmentTotals } from "@/lib/finance/fees"
-import { buildWhatsappReminderLink } from "@/lib/whatsapp/reminders"
+import { buildWhatsappReminderLink, isWithinNext24h } from "@/lib/whatsapp/reminders"
 
 type ApiError = {
   success: false
@@ -83,17 +83,6 @@ type CreatedAppointment = {
   }
 }
 
-type MeProfile = {
-  name: string
-  phone: string | null
-}
-
-type WhatsappConfirmState =
-  | { status: "idle" }
-  | { status: "loading" }
-  | { status: "sent" }
-  | { status: "needs_template"; waLink: string }
-  | { status: "error"; message: string }
 
 type FlowStep = "service" | "barber" | "slot" | "confirm" | "done"
 
@@ -128,22 +117,6 @@ function formatDateTime(value: string) {
   const date = new Date(value)
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
-    timeStyle: "short",
-    timeZone: "America/Sao_Paulo",
-  }).format(date)
-}
-
-function formatDate(value: string) {
-  const date = new Date(value)
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeZone: "America/Sao_Paulo",
-  }).format(date)
-}
-
-function formatTime(value: string) {
-  const date = new Date(value)
-  return new Intl.DateTimeFormat("pt-BR", {
     timeStyle: "short",
     timeZone: "America/Sao_Paulo",
   }).format(date)
@@ -199,12 +172,6 @@ export default function AgendarBarbeariaPage() {
   const [creating, setCreating] = useState(false)
   const [createdAppointment, setCreatedAppointment] = useState<CreatedAppointment | null>(null)
   const [backCountdown, setBackCountdown] = useState(5)
-  const [meProfile, setMeProfile] = useState<MeProfile | null>(null)
-  const [meProfileReady, setMeProfileReady] = useState(false)
-  const [whatsappConfirm, setWhatsappConfirm] = useState<WhatsappConfirmState>({
-    status: "idle",
-  })
-  const confirmRequestRef = useRef<string | null>(null)
 
   const whatsappReminderLink = useMemo(() => {
     if (!createdAppointment) {
@@ -216,10 +183,16 @@ export default function AgendarBarbeariaPage() {
     })
   }, [createdAppointment])
 
-  const handleWhatsappReminder = useCallback((link: string | null) => {
-    if (!link) return
-    window.open(link, "_blank")
-  }, [])
+  const shouldShowWhatsappReminder = useMemo(() => {
+    if (!createdAppointment) return false
+    if (!whatsappReminderLink) return false
+    return isWithinNext24h(createdAppointment.startAt)
+  }, [createdAppointment, whatsappReminderLink])
+
+  const handleWhatsappReminder = useCallback(() => {
+    if (!whatsappReminderLink) return
+    window.open(whatsappReminderLink, "_blank")
+  }, [whatsappReminderLink])
 
   const selectedPricing = useMemo(() => {
     if (!selectedService) return null
@@ -242,108 +215,6 @@ export default function AgendarBarbeariaPage() {
 
     return () => window.clearInterval(timer)
   }, [step])
-
-  useEffect(() => {
-    if (step !== "done") return
-    if (!createdAppointment || !selectedService || !selectedBarber || !shop) return
-    if (!meProfile || !meProfileReady) return
-    if (confirmRequestRef.current === createdAppointment.id) return
-
-    confirmRequestRef.current = createdAppointment.id
-
-    const waIdDigits = meProfile.phone?.replace(/\D/g, "") ?? ""
-    if (!waIdDigits) {
-      if (whatsappReminderLink) {
-        setWhatsappConfirm({ status: "needs_template", waLink: whatsappReminderLink })
-      } else {
-        setWhatsappConfirm({
-          status: "error",
-          message: "Não foi possível validar o WhatsApp.",
-        })
-      }
-      return
-    }
-
-    const appointmentDate = formatDate(createdAppointment.startAt)
-    const appointmentTime = formatTime(createdAppointment.startAt)
-    const price =
-      selectedPricing
-        ? formatCurrency(selectedPricing.totalPriceCents)
-        : createdAppointment.pricing
-          ? formatCurrency(createdAppointment.pricing.totalPriceCents)
-          : "-"
-
-    setWhatsappConfirm({ status: "loading" })
-
-    void (async () => {
-      try {
-        const response = await fetch("/api/whatsapp/confirm-appointment", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            waIdDigits,
-            customerName: meProfile.name,
-            barberName: selectedBarber.name,
-            serviceName: selectedService.name,
-            appointmentDate,
-            appointmentTime,
-            price,
-            appointmentId: createdAppointment.id,
-          }),
-        })
-
-        const result = (await response.json()) as {
-          ok?: boolean
-          sent?: boolean
-          mode?: string
-          waLink?: string
-        }
-
-        if (!response.ok || !result?.ok) {
-          setWhatsappConfirm({
-            status: "error",
-            message: "Falha ao enviar a confirmação.",
-          })
-          return
-        }
-
-        if (result.mode === "FREE_FORM" && result.sent) {
-          setWhatsappConfirm({ status: "sent" })
-          return
-        }
-
-        if (result.mode === "TEMPLATE_REQUIRED") {
-          const waLink = result.waLink ?? whatsappReminderLink
-          if (waLink) {
-            setWhatsappConfirm({ status: "needs_template", waLink })
-            return
-          }
-        }
-
-        setWhatsappConfirm({
-          status: "error",
-          message: "Não foi possível concluir a confirmação.",
-        })
-      } catch {
-        setWhatsappConfirm({
-          status: "error",
-          message: "Falha ao enviar a confirmação.",
-        })
-      }
-    })()
-  }, [
-    step,
-    createdAppointment,
-    selectedService,
-    selectedBarber,
-    shop,
-    meProfile,
-    meProfileReady,
-    selectedPricing,
-    whatsappReminderLink,
-  ])
 
   const serviceGroups = useMemo(() => {
     if (!catalog) {
@@ -398,25 +269,6 @@ export default function AgendarBarbeariaPage() {
           }
 
           setToken(currentToken)
-          setMeProfile({
-            name: me.data.user.name,
-            phone: null,
-          })
-
-          try {
-            const meResponse = await fetch("/api/me", {
-              method: "GET",
-              cache: "no-store",
-            })
-            const meResult = (await meResponse.json()) as ApiResult<MeProfile>
-            if (meResult.success) {
-              setMeProfile(meResult.data)
-            }
-          } catch {
-            // keep fallback from context
-          } finally {
-            setMeProfileReady(true)
-          }
 
           const shopResponse = await fetch(`/api/barbershops/slug/${slug}`, {
             method: "GET",
@@ -934,45 +786,21 @@ export default function AgendarBarbeariaPage() {
               </p>
             ) : null}
 
-            {whatsappConfirm.status === "loading" ? (
-              <div className="mt-4 rounded-2xl border border-white/15 bg-[#0b1330]/85 p-4">
-                <p className="text-sm text-[#c6d1ef]">
-                  Verificando o WhatsApp para confirmação...
-                </p>
-              </div>
-            ) : null}
-
-            {whatsappConfirm.status === "sent" ? (
-              <div className="mt-4 rounded-2xl border border-white/15 bg-[#0b1330]/85 p-4">
-                <p className="text-sm text-[#d9f7e8]">
-                  Confirmação enviada no WhatsApp.
-                </p>
-              </div>
-            ) : null}
-
-            {whatsappConfirm.status === "needs_template" ? (
+            {shouldShowWhatsappReminder ? (
               <div className="mt-4 rounded-2xl border border-white/15 bg-[#0b1330]/85 p-4">
                 <h3 className="text-base font-semibold text-[#f4f6ff]">
                   Notifique-me sobre o compromisso
                 </h3>
                 <p className="mt-1 text-sm text-[#c6d1ef]">
-                  Para receber lembretes no WhatsApp, ative enviando uma mensagem.
+                  O WhatsApp será usado apenas para lembretes e atualizações deste compromisso.
                 </p>
                 <UIButton
                   type="button"
                   className="mt-3 !w-auto !px-4 !py-2 !text-sm"
-                  onClick={() => handleWhatsappReminder(whatsappConfirm.waLink)}
+                  onClick={handleWhatsappReminder}
                 >
                   Ativar lembretes no WhatsApp
                 </UIButton>
-              </div>
-            ) : null}
-
-            {whatsappConfirm.status === "error" ? (
-              <div className="mt-4 rounded-2xl border border-red-300/30 bg-red-500/10 p-4">
-                <p className="text-sm text-red-100">
-                  {whatsappConfirm.message}
-                </p>
               </div>
             ) : null}
 

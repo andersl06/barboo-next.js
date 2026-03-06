@@ -97,6 +97,13 @@ export async function POST(req: Request) {
   const signature = req.headers.get("x-hub-signature-256") ?? ""
   const appSecret = process.env.WHATSAPP_APP_SECRET
 
+  if (process.env.NODE_ENV === "production" && !appSecret) {
+    return NextResponse.json(
+      { ok: false, reason: "APP_SECRET_MISSING" },
+      { status: 500 }
+    )
+  }
+
   if (appSecret) {
     if (!signature) {
       return NextResponse.json({ ok: false, reason: "MISSING_SIGNATURE" }, { status: 401 })
@@ -115,6 +122,15 @@ export async function POST(req: Request) {
     payload = JSON.parse(rawBody)
   } catch {
     return NextResponse.json({ ok: false, reason: "INVALID_JSON" }, { status: 400 })
+  }
+
+  const objectType =
+    (payload as { object?: string | null }).object ?? null
+  if (objectType && objectType !== "whatsapp_business_account") {
+    return NextResponse.json(
+      { ok: true, ignored: true, reason: "INVALID_OBJECT" },
+      { status: 200 }
+    )
   }
 
   const extracted = extractInboundMessages(payload)

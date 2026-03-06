@@ -4,13 +4,43 @@ import { prisma } from "@/lib/db/prisma"
 import { APPOINTMENT_ERRORS } from "@/lib/errors/appointment-errors"
 import { failure, success } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
+import { requireSameOrigin } from "@/lib/http/require-origin"
 import { requireMembership } from "@/lib/membership/require-membership"
+import { sendWhatsappAppointmentConfirmation } from "@/lib/whatsapp/confirmations"
+
+const BUSINESS_TIMEZONE = "America/Sao_Paulo"
+
+function formatDate(value: Date) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeZone: BUSINESS_TIMEZONE,
+  }).format(value)
+}
+
+function formatTime(value: Date) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeStyle: "short",
+    timeZone: BUSINESS_TIMEZONE,
+  }).format(value)
+}
+
+function formatCurrency(cents: number) {
+  return (cents / 100).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  })
+}
 
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string; appointmentId: string }> }
 ) {
   try {
+    const originCheck = requireSameOrigin(req)
+    if (!originCheck.ok) {
+      return failure("FORBIDDEN", originCheck.message, originCheck.status)
+    }
+
     const { id: barbershopId, appointmentId } = await params
 
     const auth = await requireAuth(req)
@@ -72,6 +102,45 @@ export async function PATCH(
         confirmedAt: true,
       },
     })
+
+    const details = await prisma.barbershopAppointment.findUnique({
+      where: { id: appointment.id },
+      select: {
+        id: true,
+        startAt: true,
+        totalPriceCents: true,
+        clientUser: {
+          select: { name: true, phone: true },
+        },
+        barberUser: {
+          select: { name: true },
+        },
+        service: {
+          select: { name: true },
+        },
+      },
+    })
+
+    if (details?.clientUser.phone) {
+      const waIdDigits = details.clientUser.phone.replace(/\D/g, "")
+      const appointmentDate = formatDate(details.startAt)
+      const appointmentTime = formatTime(details.startAt)
+
+      try {
+        await sendWhatsappAppointmentConfirmation({
+          waIdDigits,
+          customerName: details.clientUser.name,
+          barberName: details.barberUser.name,
+          serviceName: details.service.name,
+          appointmentDate,
+          appointmentTime,
+          price: formatCurrency(details.totalPriceCents),
+          appointmentId: details.id,
+        })
+      } catch (err) {
+        console.warn("Falha ao enviar confirmação WhatsApp.", err)
+      }
+    }
 
     return success(updated)
   } catch (err) {
