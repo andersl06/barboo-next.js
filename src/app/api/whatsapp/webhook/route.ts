@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/db/prisma"
 import { verifyWhatsappSignature } from "@/lib/whatsapp/signature"
 import { checkWhatsappRateLimit } from "@/lib/whatsapp/rate-limit"
@@ -151,7 +152,9 @@ export async function POST(req: Request) {
     type: message.type ?? null,
     bodyPreview: message.bodyPreview ?? null,
     receivedAt: message.receivedAt,
-    ...(shouldStoreRaw ? { raw: message.raw ?? null } : {}),
+    ...(shouldStoreRaw
+      ? { raw: (message.raw ?? Prisma.JsonNull) as Prisma.InputJsonValue }
+      : {}),
   }))
 
   const created = await prisma.whatsAppInboundMessage.createMany({
