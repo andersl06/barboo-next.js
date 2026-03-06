@@ -1,4 +1,4 @@
-import { ChargeStatus } from "@/lib/billing/types"
+﻿import { ChargeStatus } from "@/lib/billing/types"
 
 const ABACATEPAY_API_BASE = "https://api.abacatepay.com/v1"
 const ABACATEPAY_TIMEOUT_MS = 10000
@@ -6,27 +6,30 @@ const ABACATEPAY_TIMEOUT_MS = 10000
 export class AbacatePayError extends Error {
   status?: number
   code: "CONFIG_ERROR" | "HTTP_ERROR" | "PARSE_ERROR"
+  details?: unknown
 
   constructor(
     message: string,
     options: {
       code: "CONFIG_ERROR" | "HTTP_ERROR" | "PARSE_ERROR"
       status?: number
+      details?: unknown
     }
   ) {
     super(message)
     this.name = "AbacatePayError"
     this.code = options.code
     this.status = options.status
+    this.details = options.details
   }
 }
 
 type AbacateResponse<T> = {
   data?: T
-  error?: {
-    message?: string
-    code?: string
-  } | null
+  error?: unknown
+  message?: string
+  detail?: string
+  errors?: unknown
 }
 
 type AbacatePixChargePayload = {
@@ -59,10 +62,71 @@ export type PixChargeSnapshot = {
   paidAt: string | null
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null
+}
+
+function asMessage(value: unknown): string | null {
+  if (typeof value !== "string") return null
+  const normalized = value.trim()
+  return normalized ? normalized : null
+}
+
+function truncateForLog(value: string) {
+  const trimmed = value.trim()
+  return trimmed.length > 240 ? `${trimmed.slice(0, 237)}...` : trimmed
+}
+
+function extractErrorsMessage(value: unknown): string | null {
+  if (!Array.isArray(value)) return null
+
+  const parts = value
+    .map((item) => {
+      if (typeof item === "string") return item.trim()
+      if (!isRecord(item)) return null
+      const field = asMessage(item.field) ?? asMessage(item.path)
+      const message = asMessage(item.message) ?? asMessage(item.detail)
+      if (!message) return null
+      return field ? `${field}: ${message}` : message
+    })
+    .filter((item): item is string => Boolean(item))
+
+  return parts.length > 0 ? truncateForLog(parts.join(" | ")) : null
+}
+
+function extractHttpErrorMessage(payload: unknown, responseStatus: number): string {
+  if (isRecord(payload)) {
+    const error = payload.error
+
+    if (isRecord(error)) {
+      const nestedMessage = asMessage(error.message) ?? asMessage(error.detail) ?? extractErrorsMessage(error.errors)
+      if (nestedMessage) return nestedMessage
+    }
+
+    if (typeof error === "string" && error.trim()) {
+      return truncateForLog(error)
+    }
+
+    const topLevelMessage =
+      asMessage(payload.message) ??
+      asMessage(payload.detail) ??
+      extractErrorsMessage(payload.errors) ??
+      extractErrorsMessage(error)
+
+    if (topLevelMessage) return topLevelMessage
+  }
+
+  if (typeof payload === "string" && payload.trim()) {
+    return truncateForLog(payload)
+  }
+
+  return `Erro HTTP ${responseStatus} ao chamar AbacatePay.`
+}
+
 function getApiKey() {
   const value = process.env.ABACATEPAY_API_KEY?.trim()
   if (!value) {
-    throw new AbacatePayError("ABACATEPAY_API_KEY nao configurada.", {
+    throw new AbacatePayError("ABACATEPAY_API_KEY não configurada.", {
       code: "CONFIG_ERROR",
       status: 500,
     })
@@ -104,29 +168,53 @@ async function callAbacatePay<T>(path: string, init: RequestInit): Promise<T> {
     clearTimeout(timeout)
   }
 
-  let payload: AbacateResponse<T> | null = null
+  let parsedPayload: unknown = null
+  const rawBody = await response.text()
 
-  try {
-    payload = (await response.json()) as AbacateResponse<T>
-  } catch {
-    throw new AbacatePayError("Resposta invalida da AbacatePay.", {
-      code: "PARSE_ERROR",
-      status: response.status,
-    })
+  if (rawBody) {
+    try {
+      parsedPayload = JSON.parse(rawBody)
+    } catch {
+      if (!response.ok) {
+        throw new AbacatePayError(truncateForLog(rawBody), {
+          code: "HTTP_ERROR",
+          status: response.status,
+          details: rawBody,
+        })
+      }
+
+      throw new AbacatePayError("Resposta inválida da AbacatePay.", {
+        code: "PARSE_ERROR",
+        status: response.status,
+        details: rawBody,
+      })
+    }
   }
 
   if (!response.ok) {
-    const message = payload?.error?.message ?? `Erro HTTP ${response.status} ao chamar AbacatePay.`
+    const message = extractHttpErrorMessage(parsedPayload, response.status)
     throw new AbacatePayError(message, {
       code: "HTTP_ERROR",
       status: response.status,
+      details: parsedPayload ?? rawBody,
     })
   }
 
-  if (!payload || typeof payload !== "object" || !payload.data) {
+  if (!isRecord(parsedPayload)) {
+    throw new AbacatePayError("Resposta inválida da AbacatePay.", {
+      code: "PARSE_ERROR",
+      status: response.status,
+      details: parsedPayload,
+    })
+  }
+
+  const payload = parsedPayload as AbacateResponse<T>
+
+  if (!payload.data) {
     throw new AbacatePayError("Resposta da AbacatePay sem campo data.", {
       code: "PARSE_ERROR",
       status: response.status,
+      details: parsedPayload,
     })
   }
 
@@ -180,7 +268,7 @@ function toSnapshot(
   }
 
   if (!qrCodeCopyPaste && !options?.allowMissingQr) {
-    throw new AbacatePayError("Resposta da AbacatePay sem codigo copia e cola.", {
+    throw new AbacatePayError("Resposta da AbacatePay sem Código copia e cola.", {
       code: "PARSE_ERROR",
     })
   }

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db/prisma"
+﻿import { prisma } from "@/lib/db/prisma"
 
 export type BookableBarber = {
   userId: string

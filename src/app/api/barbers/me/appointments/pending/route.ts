@@ -1,4 +1,4 @@
-import { requireAuth } from "@/lib/auth/require-auth"
+﻿import { requireAuth } from "@/lib/auth/require-auth"
 import {
   getBusinessDateBounds,
   normalizeBusinessDate,
@@ -60,7 +60,7 @@ export async function GET(req: Request) {
     if (date) {
       const normalizedDate = normalizeBusinessDate(date)
       if (!normalizedDate) {
-        return failure("VALIDATION_ERROR", "Data invalida. Use YYYY-MM-DD.", 400)
+        return failure("VALIDATION_ERROR", "Data inválida. Use YYYY-MM-DD.", 400)
       }
 
       const bounds = getBusinessDateBounds(normalizedDate)

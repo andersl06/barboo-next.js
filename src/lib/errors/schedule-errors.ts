@@ -1,4 +1,4 @@
-export const SCHEDULE_ERRORS = {
+﻿export const SCHEDULE_ERRORS = {
   OPENING_HOURS_REQUIRED: {
     field: "openingHours" as const,
     code: "REQUIRED" as const,

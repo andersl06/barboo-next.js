@@ -1,26 +1,26 @@
-import { z } from "zod"
+﻿import { z } from "zod"
 import { isValidCPF } from "./cpf"
 
 export const onboardingIntentSchema = z.enum(["CLIENT", "OWNER"])
 
 export const registerSchema = z.object({
   name: z.string().min(3, "Nome muito curto"),
-  email: z.string().email("Email invalido"),
+  email: z.string().email("Email inválido"),
   cpf: z
     .string()
     .length(11, "CPF deve conter 11 digitos")
     .regex(/^\d+$/, "CPF deve conter apenas numeros")
     .refine(isValidCPF, {
-      message: "CPF invalido",
+      message: "CPF inválido",
     }),
-  phone: z.string().min(10, "Telefone invalido"),
-  password: z.string().min(6, "Senha deve ter no minimo 6 caracteres"),
+  phone: z.string().min(10, "Telefone inválido"),
+  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
   onboardingIntent: onboardingIntentSchema.optional().default("CLIENT"),
 })
 
 export const loginSchema = z.object({
-  email: z.string().email("Email invalido"),
-  password: z.string().min(1, "Senha obrigatoria"),
+  email: z.string().email("Email inválido"),
+  password: z.string().min(1, "Senha obrigatória"),
 })
 
 export const updateOnboardingIntentSchema = z.object({
@@ -29,7 +29,7 @@ export const updateOnboardingIntentSchema = z.object({
 
 export const changePasswordSchema = z
   .object({
-    newPassword: z.string().min(6, "Senha deve ter no minimo 6 caracteres"),
+    newPassword: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
     confirmPassword: z.string().optional(),
   })
   .refine(
@@ -37,21 +37,21 @@ export const changePasswordSchema = z
       !data.confirmPassword || data.newPassword === data.confirmPassword,
     {
       path: ["confirmPassword"],
-      message: "Confirmacao de senha nao confere",
+      message: "Confirmação de senha não confere",
     }
   )
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email("Email invalido"),
+  email: z.string().email("Email inválido"),
 })
 
 export const resetPasswordSchema = z
   .object({
-    token: z.string().trim().min(32, "Token invalido"),
-    password: z.string().min(6, "Senha deve ter no minimo 6 caracteres"),
+    token: z.string().trim().min(32, "Token inválido"),
+    password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
     confirmPassword: z.string().optional(),
   })
   .refine((data) => !data.confirmPassword || data.password === data.confirmPassword, {
     path: ["confirmPassword"],
-    message: "Confirmacao de senha nao confere",
+    message: "Confirmação de senha não confere",
   })

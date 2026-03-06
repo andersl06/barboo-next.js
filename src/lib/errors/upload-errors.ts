@@ -1,4 +1,4 @@
-export const UPLOAD_ERRORS = {
+﻿export const UPLOAD_ERRORS = {
   IMAGE_REQUIRED: {
     code: "IMAGE_REQUIRED" as const,
     message: "Imagem é obrigatória.",

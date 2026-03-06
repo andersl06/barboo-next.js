@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
@@ -53,7 +53,7 @@ const CARD_LINKS = [
   {
     href: "/owner/barbershop/edit",
     title: "Editar barbearia",
-    description: "Dados principais, endereco, slug e perfil da barbearia.",
+    description: "Dados principais, Endereço, slug e perfil da barbearia.",
   },
   {
     href: "/owner/categories",
@@ -62,8 +62,8 @@ const CARD_LINKS = [
   },
   {
     href: "/owner/services",
-    title: "Servicos",
-    description: "Criar, atualizar valores e organizar os servicos.",
+    title: "Serviços",
+    description: "Criar, atualizar valores e organizar os Serviços.",
   },
   {
     href: "/owner/team",
@@ -154,7 +154,7 @@ export default function OwnerDashboardPage() {
         finance: financeResult.data,
       })
     } catch {
-      setError("Falha de conexao ao carregar o dashboard.")
+      setError("Falha de conexão ao carregar o dashboard.")
     }
   }, [ownerBarbershopId, token])
 
@@ -171,8 +171,8 @@ export default function OwnerDashboardPage() {
   if (state !== "ready") {
     return (
       <OwnerShell
-        title="Dashboard do proprietario"
-        subtitle="Centralize toda a operacao da sua barbearia."
+        title="Dashboard do proprietário"
+        subtitle="Centralize toda a operação da sua barbearia."
         activePath="/owner/dashboard"
         statusLabel={barbershopStatus}
       >
@@ -183,8 +183,8 @@ export default function OwnerDashboardPage() {
 
   return (
     <OwnerShell
-      title={`Dashboard ${data?.barbershop.name ? `- ${data.barbershop.name}` : "do proprietario"}`}
-      subtitle="Resumo rapido da operacao e atalhos para cada configuracao."
+      title={`Dashboard ${data?.barbershop.name ? `- ${data.barbershop.name}` : "do proprietário"}`}
+      subtitle="Resumo rápido da operação e atalhos para cada configuração."
       activePath="/owner/dashboard"
       statusLabel={data?.barbershop.status ?? barbershopStatus}
       hideNavigation
@@ -197,7 +197,7 @@ export default function OwnerDashboardPage() {
 
       {data?.finance.financialStatus === "BLOCKED" ? (
         <p className="mt-3 rounded-xl border border-red-300/35 bg-red-500/12 px-3.5 py-2.5 text-sm text-red-100">
-          Sua barbearia esta bloqueada por pendencia financeira. Regularize para voltar a receber agendamentos.
+          Sua barbearia esta bloqueada por Pendência financeira. Regularize para voltar a receber agendamentos.
         </p>
       ) : null}
 
@@ -233,12 +233,12 @@ export default function OwnerDashboardPage() {
           </p>
         </article>
         <article className="rounded-2xl border border-white/12 bg-[#0b1330]/85 p-4">
-          <p className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Valor do mes (servicos)</p>
+          <p className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Valor do Mês (Serviços)</p>
           <p className="mt-1 text-2xl font-bold">
             {data ? formatCurrency(data.finance.monthlyServiceAmountCents) : "--"}
           </p>
           <p className="mt-1 text-xs text-[#9eabd4]">
-            {data ? `${data.finance.monthlyAppointmentsCount} agendamentos no mes` : ""}
+            {data ? `${data.finance.monthlyAppointmentsCount} agendamentos no Mês` : ""}
           </p>
         </article>
       </div>

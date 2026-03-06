@@ -1,4 +1,4 @@
-const SERVICE_FEE_PERCENT = 0.03
+﻿const SERVICE_FEE_PERCENT = 0.03
 const MIN_SERVICE_FEE_CENTS = 100
 
 export function calculateServiceFeeCents(servicePriceCents: number) {

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react"
 import { OwnerGate } from "@/components/owner/OwnerGate"
@@ -92,7 +92,7 @@ export default function OwnerTeamPage() {
         )
       )
     } catch {
-      setError("Falha de conexao ao carregar equipe.")
+      setError("Falha de conexão ao carregar equipe.")
     } finally {
       setLoading(false)
     }
@@ -136,7 +136,7 @@ export default function OwnerTeamPage() {
       setInfo("Barbeiro adicionado com sucesso.")
       await loadMembers()
     } catch {
-      setError("Falha de conexao ao adicionar barbeiro.")
+      setError("Falha de conexão ao adicionar barbeiro.")
     } finally {
       setCreating(false)
     }
@@ -173,7 +173,7 @@ export default function OwnerTeamPage() {
       setInfo("Dados do barbeiro atualizados.")
       await loadMembers()
     } catch {
-      setError("Falha de conexao ao atualizar barbeiro.")
+      setError("Falha de conexão ao atualizar barbeiro.")
     } finally {
       setSavingId(null)
     }
@@ -203,7 +203,7 @@ export default function OwnerTeamPage() {
       setInfo("Barbeiro removido da barbearia.")
       await loadMembers()
     } catch {
-      setError("Falha de conexao ao remover barbeiro.")
+      setError("Falha de conexão ao remover barbeiro.")
     } finally {
       setRemovingId(null)
     }
@@ -213,7 +213,7 @@ export default function OwnerTeamPage() {
     return (
       <OwnerShell
         title="Equipe"
-        subtitle="Gestao completa de barbeiros da sua barbearia."
+        subtitle="gestão completa de barbeiros da sua barbearia."
         activePath="/owner/team"
         statusLabel={barbershopStatus}
       >
@@ -358,7 +358,7 @@ export default function OwnerTeamPage() {
                           : "border-white/20 bg-white/5 text-[#d5def7]"
                       }`}
                     >
-                      {draft.canManageBlocks ? "Pode bloquear agenda" : "Sem permissao de bloqueio"}
+                      {draft.canManageBlocks ? "Pode bloquear agenda" : "Sem permissão de bloqueio"}
                     </button>
 
                     <UIButton

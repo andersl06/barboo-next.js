@@ -1,4 +1,4 @@
-type DayKey =
+﻿type DayKey =
   | "monday"
   | "tuesday"
   | "wednesday"

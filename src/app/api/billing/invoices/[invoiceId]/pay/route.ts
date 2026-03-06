@@ -1,4 +1,4 @@
-import { z } from "zod"
+﻿import { z } from "zod"
 import { InvoiceStatus } from "@/lib/billing/types"
 import { prisma } from "@/lib/db/prisma"
 import { requireOwnerFinanceContext } from "@/lib/finance/owner-context"
@@ -7,10 +7,11 @@ import { failure, success } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
 
 const paramsSchema = z.object({
-  invoiceId: z.string().uuid("invoiceId invalido."),
+  invoiceId: z.string().uuid("invoiceId inválido."),
 })
 
 const CHARGE_EXPIRES_IN_SECONDS = 5 * 60
+const ABACATEPAY_DESCRIPTION_MAX_LENGTH = 37
 
 const PAYABLE_STATUSES: InvoiceStatus[] = ["OPEN", "OVERDUE"]
 
@@ -54,6 +55,12 @@ function toIsoWeekLabel(date: Date) {
   return `${utcDate.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`
 }
 
+function buildPixDescription(barbershopName: string, weekLabel: string) {
+  const base = `Fatura semanal ${barbershopName} ${weekLabel}`
+  const normalized = base.replace(/\s+/g, " ").trim()
+  return normalized.slice(0, ABACATEPAY_DESCRIPTION_MAX_LENGTH)
+}
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ invoiceId: string }> }
@@ -68,7 +75,7 @@ export async function POST(
     if (!parsedParams.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de validacao",
+        "Erro de Validação",
         400,
         parsedParams.error.issues.map((issue) => ({
           field:
@@ -107,25 +114,24 @@ export async function POST(
     })
 
     if (!invoice) {
-      return failure("NOT_FOUND", "Fatura nao encontrada.", 404)
+      return failure("NOT_FOUND", "Fatura não encontrada.", 404)
     }
 
     if (invoice.status === "PAID") {
-      return failure("INVOICE_ALREADY_PAID", "Esta fatura ja esta paga.", 409)
+      return failure("INVOICE_ALREADY_PAID", "Esta fatura Já esta paga.", 409)
     }
 
     if (!PAYABLE_STATUSES.includes(invoice.status)) {
-      return failure("INVOICE_NOT_PAYABLE", "Esta fatura nao esta disponivel para pagamento.", 409)
+      return failure("INVOICE_NOT_PAYABLE", "Esta fatura não está disponível para pagamento.", 409)
     }
 
     if (invoice.totalFeesCents <= 0) {
-      return failure("INVOICE_AMOUNT_INVALID", "Fatura sem valor valido para cobranca.", 409)
+      return failure("INVOICE_AMOUNT_INVALID", "Fatura sem valor valido para Cobrança.", 409)
     }
 
     if (canReuseStoredCharge(invoice)) {
       return success({
         invoiceId: invoice.id,
-        chargeId: invoice.abacateChargeId,
         qrCodeImageUrl: invoice.abacateQrCodeImageUrl,
         qrCodeCopyPaste: invoice.abacateQrCodeCopyPaste,
         expiresAt: invoice.abacateChargeExpiresAt?.toISOString() ?? null,
@@ -136,7 +142,7 @@ export async function POST(
     }
 
     const weekLabel = toIsoWeekLabel(invoice.periodStart)
-    const description = `Fatura semanal - ${invoice.barbershop.name} - ${weekLabel}`
+    const description = buildPixDescription(invoice.barbershop.name, weekLabel)
 
     const charge = await createPixCharge({
       amountCents: invoice.totalFeesCents,
@@ -164,7 +170,6 @@ export async function POST(
 
     return success({
       invoiceId: invoice.id,
-      chargeId: charge.chargeId,
       qrCodeImageUrl: charge.qrCodeImageUrl,
       qrCodeCopyPaste: charge.qrCodeCopyPaste,
       expiresAt: charge.expiresAt,
@@ -179,14 +184,19 @@ export async function POST(
         errorCode: err.code,
         status: err.status,
         message: err.message,
+        details: err.details,
       })
 
       if (err.status === 429) {
         return failure("ABACATEPAY_RATE_LIMIT", "Limite temporario de cobrancas PIX atingido. Tente novamente.", 429)
       }
 
+      if (err.status === 422) {
+        return failure("ABACATEPAY_VALIDATION_ERROR", err.message, 422)
+      }
+
       const statusCode = typeof err.status === "number" && err.status >= 400 ? err.status : 502
-      return failure("ABACATEPAY_ERROR", "Falha ao criar cobranca PIX no momento.", statusCode)
+      return failure("ABACATEPAY_ERROR", "Falha ao criar Cobrança PIX no momento.", statusCode)
     }
 
     return handleError(err)

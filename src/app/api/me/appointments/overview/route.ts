@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client"
+﻿import { Prisma } from "@prisma/client"
 import { requireAuth } from "@/lib/auth/require-auth"
 import { prisma } from "@/lib/db/prisma"
 import { failure, success } from "@/lib/http/api-response"
@@ -48,11 +48,11 @@ export async function GET(req: Request) {
     ])
 
     if (scope === "OWNER" && !ownerMembership) {
-      return failure("FORBIDDEN", "Acesso owner nao autorizado.", 403)
+      return failure("FORBIDDEN", "Acesso owner não autorizado.", 403)
     }
 
     if (scope === "BARBER" && !barberMembership && !ownerMembership) {
-      return failure("FORBIDDEN", "Acesso barber nao autorizado.", 403)
+      return failure("FORBIDDEN", "Acesso barber não autorizado.", 403)
     }
 
     const baseWhere: Prisma.BarbershopAppointmentWhereInput =

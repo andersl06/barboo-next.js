@@ -1,4 +1,4 @@
-import { z } from "zod"
+﻿import { z } from "zod"
 
 function asOptionalTrimmedString(value: unknown) {
   if (typeof value !== "string") return undefined
@@ -33,11 +33,11 @@ export const updateMeSchema = z.object({
 )
 
 export const changeMyPasswordSchema = z.object({
-  currentPassword: z.string().min(1, "Senha atual e obrigatoria."),
-  newPassword: z.string().min(6, "Nova senha deve ter no minimo 6 caracteres."),
-  confirmPassword: z.string().min(6, "Confirmacao de senha invalida."),
+  currentPassword: z.string().min(1, "Senha atual é obrigatória."),
+  newPassword: z.string().min(6, "Nova senha deve ter no mínimo 6 caracteres."),
+  confirmPassword: z.string().min(6, "Confirmação de senha inválida."),
 }).refine((payload) => payload.newPassword === payload.confirmPassword, {
   path: ["confirmPassword"],
-  message: "Confirmacao de senha nao confere.",
+  message: "Confirmação de senha não confere.",
 })
 

@@ -1,4 +1,4 @@
-import { canManageBlocks } from "@/lib/barber/can-manage-blocks"
+﻿import { canManageBlocks } from "@/lib/barber/can-manage-blocks"
 import { requireAuth } from "@/lib/auth/require-auth"
 import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"
 import { prisma } from "@/lib/db/prisma"

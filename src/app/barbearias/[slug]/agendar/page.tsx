@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
@@ -11,6 +11,7 @@ import {
   getAccessToken,
 } from "@/lib/client/session"
 import { calculateAppointmentTotals } from "@/lib/finance/fees"
+import { buildWhatsappReminderLink, isWithinNext24h } from "@/lib/whatsapp/reminders"
 
 type ApiError = {
   success: false
@@ -169,6 +170,48 @@ export default function AgendarBarbeariaPage() {
   const [selectedSlot, setSelectedSlot] = useState<SlotsData["items"][number] | null>(null)
   const [creating, setCreating] = useState(false)
   const [createdAppointment, setCreatedAppointment] = useState<CreatedAppointment | null>(null)
+  const [backCountdown, setBackCountdown] = useState(5)
+
+  const whatsappReminderLink = useMemo(() => {
+    if (!createdAppointment || !shop || !selectedService || !selectedBarber) {
+      return null
+    }
+
+    return buildWhatsappReminderLink({
+      barbershopName: shop.name,
+      serviceName: selectedService.name,
+      barberName: selectedBarber.name,
+      appointmentStartAt: createdAppointment.startAt,
+    })
+  }, [createdAppointment, selectedBarber, selectedService, shop])
+
+  const shouldShowWhatsappReminder = useMemo(() => {
+    if (!createdAppointment) return false
+    if (!whatsappReminderLink) return false
+    return isWithinNext24h(createdAppointment.startAt)
+  }, [createdAppointment, whatsappReminderLink])
+
+  const handleWhatsappReminder = useCallback(() => {
+    if (!whatsappReminderLink) return
+    window.open(whatsappReminderLink, "_blank")
+  }, [whatsappReminderLink])
+
+  useEffect(() => {
+    if (step !== "done") return
+
+    setBackCountdown(5)
+    const timer = window.setInterval(() => {
+      setBackCountdown((current) => {
+        if (current <= 1) {
+          window.clearInterval(timer)
+          return 0
+        }
+        return current - 1
+      })
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [step])
 
   const serviceGroups = useMemo(() => {
     if (!catalog) {
@@ -205,7 +248,7 @@ export default function AgendarBarbeariaPage() {
 
   useEffect(() => {
     if (!slug) {
-      setError("Slug da barbearia invalido.")
+      setError("Slug da barbearia inválido.")
       setLoading(false)
       return
     }
@@ -258,7 +301,7 @@ export default function AgendarBarbeariaPage() {
           ]))
 
           if (!catalogResult.success) {
-            setError(resolveApiError(catalogResult, "Falha ao carregar servicos."))
+            setError(resolveApiError(catalogResult, "Falha ao carregar Serviços."))
             return
           }
 
@@ -298,7 +341,7 @@ export default function AgendarBarbeariaPage() {
             }
           }
         } catch {
-          setError("Falha de conexao ao carregar o fluxo de agendamento.")
+          setError("Falha de conexão ao carregar o fluxo de agendamento.")
         } finally {
           setLoading(false)
         }
@@ -338,7 +381,7 @@ export default function AgendarBarbeariaPage() {
       const result = (await response.json()) as ApiResult<SlotsData>
       if (!result.success) {
         if (updateUi) {
-          setSlotError(resolveApiError(result, "Falha ao buscar horarios disponiveis."))
+          setSlotError(resolveApiError(result, "Falha ao buscar Horários Disponíveis."))
         }
         return null
       }
@@ -350,7 +393,7 @@ export default function AgendarBarbeariaPage() {
       return result.data.items
     } catch {
       if (updateUi) {
-        setSlotError("Falha de conexao ao buscar horarios.")
+        setSlotError("Falha de conexão ao buscar Horários.")
       }
       return null
     } finally {
@@ -378,7 +421,7 @@ export default function AgendarBarbeariaPage() {
         }
       }
 
-      setSlotError("Nao encontramos horarios disponiveis nos proximos 14 dias.")
+      setSlotError("Não encontramos Horários Disponíveis nos Próximos 14 dias.")
     } finally {
       setFindingNextSlots(false)
     }
@@ -425,14 +468,14 @@ export default function AgendarBarbeariaPage() {
           router.replace(getLoginHref(slug, selectedService.id))
           return
         }
-        setError(resolveApiError(result, "Nao foi possivel criar o agendamento."))
+        setError(resolveApiError(result, "Não foi possível criar o agendamento."))
         return
       }
 
       setCreatedAppointment(result.data)
       setStep("done")
     } catch {
-      setError("Falha de conexao ao confirmar agendamento.")
+      setError("Falha de conexão ao confirmar agendamento.")
     } finally {
       setCreating(false)
     }
@@ -483,10 +526,10 @@ export default function AgendarBarbeariaPage() {
 
         <div className="mt-4 grid grid-cols-4 gap-2">
           {[
-            { id: "service", label: "Servico" },
+            { id: "service", label: "Serviço" },
             { id: "barber", label: "Barbeiro" },
-            { id: "slot", label: "Horario" },
-            { id: "confirm", label: "Confirmacao" },
+            { id: "slot", label: "Horário" },
+            { id: "confirm", label: "Confirmação" },
           ].map((item) => {
             const order: FlowStep[] = ["service", "barber", "slot", "confirm", "done"]
             const current = order.indexOf(step)
@@ -514,7 +557,7 @@ export default function AgendarBarbeariaPage() {
 
         {step === "service" ? (
           <section className="mt-5 rounded-2xl border border-white/12 bg-[#0b1330]/84 p-4 md:p-5">
-            <h2 className="text-lg font-semibold">Escolha o servico</h2>
+            <h2 className="text-lg font-semibold">Escolha o Serviço</h2>
 
             <div className="mt-3 flex flex-wrap gap-2">
               {serviceGroups.map((group) => (
@@ -562,7 +605,7 @@ export default function AgendarBarbeariaPage() {
 
               {visibleServices.length === 0 ? (
                 <p className="rounded-lg border border-white/10 bg-[#0a112c]/70 p-3 text-sm text-[#c6d1ef]">
-                  Nenhum servico ativo nesta categoria.
+                  Nenhum Serviço ativo nesta categoria.
                 </p>
               ) : null}
             </div>
@@ -573,7 +616,7 @@ export default function AgendarBarbeariaPage() {
           <section className="mt-5 rounded-2xl border border-white/12 bg-[#0b1330]/84 p-4 md:p-5">
             <h2 className="text-lg font-semibold">Escolha o barbeiro</h2>
             <p className="mt-1 text-sm text-[#b8c5ea]">
-              Servico selecionado: <span className="font-semibold text-[#f3f6ff]">{selectedService?.name}</span>
+              Serviço selecionado: <span className="font-semibold text-[#f3f6ff]">{selectedService?.name}</span>
             </p>
 
             <div className="mt-4 grid gap-2.5 md:grid-cols-2">
@@ -614,7 +657,7 @@ export default function AgendarBarbeariaPage() {
                 onClick={() => setStep("service")}
                 className="text-sm text-[#b8c5ea] hover:text-white"
               >
-                Voltar para servicos
+                Voltar para Serviços
               </button>
             </div>
           </section>
@@ -622,7 +665,7 @@ export default function AgendarBarbeariaPage() {
 
         {step === "slot" ? (
           <section className="mt-5 rounded-2xl border border-white/12 bg-[#0b1330]/84 p-4 md:p-5">
-            <h2 className="text-lg font-semibold">Escolha o horario</h2>
+            <h2 className="text-lg font-semibold">Escolha o Horário</h2>
             <p className="mt-1 text-sm text-[#b8c5ea]">
               {selectedService?.name} com <span className="font-semibold text-[#f3f6ff]">{selectedBarber?.name}</span>
             </p>
@@ -639,7 +682,7 @@ export default function AgendarBarbeariaPage() {
             </label>
             {selectedDate === getTodayDate() ? (
               <p className="mt-2 text-xs text-[#aeb8db]">
-                Para hoje, apenas horarios futuros ficam disponiveis.
+                Para hoje, apenas Horários futuros ficam Disponíveis.
               </p>
             ) : null}
 
@@ -651,7 +694,7 @@ export default function AgendarBarbeariaPage() {
 
             <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
               {loadingSlots ? (
-                <p className="col-span-full text-sm text-[#c6d1ef]">Buscando horarios...</p>
+                <p className="col-span-full text-sm text-[#c6d1ef]">Buscando Horários...</p>
               ) : slots.length > 0 ? (
                 slots.map((slot) => (
                   <button
@@ -669,7 +712,7 @@ export default function AgendarBarbeariaPage() {
               ) : (
                 <div className="col-span-full space-y-2">
                   <p className="text-sm text-[#c6d1ef]">
-                    Nenhum horario livre para esta data.
+                    Nenhum Horário livre para esta data.
                   </p>
                   <UIButton
                     type="button"
@@ -680,7 +723,7 @@ export default function AgendarBarbeariaPage() {
                       void findNextAvailableDate()
                     }}
                   >
-                    {findingNextSlots ? "Buscando..." : "Buscar proxima data com horarios"}
+                    {findingNextSlots ? "Buscando..." : "Buscar próxima data com Horários"}
                   </UIButton>
                 </div>
               )}
@@ -704,10 +747,10 @@ export default function AgendarBarbeariaPage() {
 
             <div className="mt-3 space-y-2 rounded-xl border border-white/10 bg-[#0a112c]/70 p-3 text-sm">
               <p><span className="text-[#aeb8db]">Barbearia:</span> {shop?.name}</p>
-              <p><span className="text-[#aeb8db]">Servico:</span> {selectedService?.name}</p>
-              <p><span className="text-[#aeb8db]">Duracao:</span> {selectedService?.durationMinutes} min</p>
-              <p><span className="text-[#aeb8db]">Servico:</span> {selectedPricing ? formatCurrency(selectedPricing.servicePriceCents) : "-"}</p>
-              <p><span className="text-[#aeb8db]">Taxa de servico:</span> {selectedPricing ? formatCurrency(selectedPricing.serviceFeeCents) : "-"}</p>
+              <p><span className="text-[#aeb8db]">Serviço:</span> {selectedService?.name}</p>
+              <p><span className="text-[#aeb8db]">duração:</span> {selectedService?.durationMinutes} min</p>
+              <p><span className="text-[#aeb8db]">Serviço:</span> {selectedPricing ? formatCurrency(selectedPricing.servicePriceCents) : "-"}</p>
+              <p><span className="text-[#aeb8db]">Taxa de Serviço:</span> {selectedPricing ? formatCurrency(selectedPricing.serviceFeeCents) : "-"}</p>
               <p><span className="text-[#aeb8db]">Total:</span> {selectedPricing ? formatCurrency(selectedPricing.totalPriceCents) : "-"}</p>
               <p><span className="text-[#aeb8db]">Barbeiro:</span> {selectedBarber?.name}</p>
               <p><span className="text-[#aeb8db]">Data e hora:</span> {selectedSlot ? formatDateTime(selectedSlot.startAt) : "-"}</p>
@@ -727,7 +770,7 @@ export default function AgendarBarbeariaPage() {
                 onClick={() => setStep("slot")}
                 className="rounded-lg border border-white/15 px-3 py-2 text-sm text-[#d8e3ff] hover:bg-white/10"
               >
-                Voltar para horarios
+                Voltar para Horários
               </button>
             </div>
           </section>
@@ -737,27 +780,47 @@ export default function AgendarBarbeariaPage() {
           <section className="mt-5 rounded-2xl border border-emerald-300/25 bg-emerald-500/10 p-4 md:p-5">
             <h2 className="text-lg font-semibold text-emerald-100">Agendamento enviado</h2>
             <p className="mt-2 text-sm text-emerald-50">
-              Aguardando confirmacao do barbeiro.
+              Aguardando confirmação do barbeiro.
             </p>
             {createdAppointment ? (
               <p className="mt-2 text-sm text-emerald-50">
-                Horario: {formatDateTime(createdAppointment.startAt)}
+                Horário: {formatDateTime(createdAppointment.startAt)}
               </p>
             ) : null}
 
+            {shouldShowWhatsappReminder ? (
+              <div className="mt-4 rounded-2xl border border-white/15 bg-[#0b1330]/85 p-4">
+                <h3 className="text-base font-semibold text-[#f4f6ff]">
+                  Notifique-me sobre o compromisso
+                </h3>
+                <p className="mt-1 text-sm text-[#c6d1ef]">
+                  O WhatsApp será usado apenas para lembretes e atualizações deste compromisso.
+                </p>
+                <UIButton
+                  type="button"
+                  className="mt-3 !w-auto !px-4 !py-2 !text-sm"
+                  onClick={handleWhatsappReminder}
+                >
+                  Ativar lembretes no WhatsApp
+                </UIButton>
+              </div>
+            ) : null}
+
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link
-                href={`/barbearias/${slug}`}
-                className="inline-flex rounded-lg border border-white/20 bg-[#0f1b49]/70 px-3 py-2 text-sm font-semibold text-[#e7edff] hover:bg-[#14245f]"
+              <UIButton
+                type="button"
+                variant="secondary"
+                disabled={backCountdown > 0}
+                className="!w-auto !px-4 !py-2 !text-sm disabled:cursor-not-allowed disabled:opacity-70"
+                onClick={() => {
+                  if (backCountdown > 0) return
+                  router.push(`/barbearias/${slug}`)
+                }}
               >
-                Voltar para barbearia
-              </Link>
-              <Link
-                href="/cliente/barbearias-proximas"
-                className="inline-flex rounded-lg border border-[#ff965f]/30 bg-gradient-to-b from-[#f36c20] via-[#e0531e] to-[#cb4518] px-3 py-2 text-sm font-semibold text-white hover:brightness-110"
-              >
-                Ver outras barbearias
-              </Link>
+                {backCountdown > 0
+                  ? `Voltar para barbearia (${backCountdown}s)`
+                  : "Voltar para barbearia"}
+              </UIButton>
             </div>
           </section>
         ) : null}

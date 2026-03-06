@@ -1,4 +1,4 @@
-import { canManageBlocks } from "@/lib/barber/can-manage-blocks"
+﻿import { canManageBlocks } from "@/lib/barber/can-manage-blocks"
 import { ensureBarberMembership } from "@/lib/barber/ensure-barber-membership"
 import { requireAuth } from "@/lib/auth/require-auth"
 import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"
@@ -43,7 +43,7 @@ export async function POST(
 
     const targetMembership = await ensureBarberMembership(barbershopId, barberUserId)
     if (!targetMembership) {
-      return failure("NOT_FOUND", "Barbeiro nao encontrado na barbearia", 404)
+      return failure("NOT_FOUND", "Barbeiro não encontrado na barbearia", 404)
     }
 
     const body = await req.json()
@@ -51,7 +51,7 @@ export async function POST(
     if (!parsed.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de validacao",
+        "Erro de Validação",
         400,
         parsed.error.issues.map((issue) => ({
           field:

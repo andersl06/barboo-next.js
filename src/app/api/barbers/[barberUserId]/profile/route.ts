@@ -1,4 +1,4 @@
-import { canManageBlocks } from "@/lib/barber/can-manage-blocks"
+﻿import { canManageBlocks } from "@/lib/barber/can-manage-blocks"
 import { ensureBarberMembership } from "@/lib/barber/ensure-barber-membership"
 import { requireAuth } from "@/lib/auth/require-auth"
 import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"
@@ -21,7 +21,7 @@ export async function POST(
     const barbershopId = getBarbershopId(req)
 
     if (!barbershopId) {
-      return failure("BAD_REQUEST", "barbershopId e obrigatorio", 400)
+      return failure("BAD_REQUEST", "barbershopId é obrigatório", 400)
     }
 
     const auth = await requireAuth(req)
@@ -62,7 +62,7 @@ export async function POST(
       : null
 
     if (!targetMembership && !ownerSelfAsBarber) {
-      return failure("NOT_FOUND", "Barbeiro nao encontrado na barbearia", 404)
+      return failure("NOT_FOUND", "Barbeiro não encontrado na barbearia", 404)
     }
 
     const body = await req.json()
@@ -70,7 +70,7 @@ export async function POST(
     if (!parsed.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de validacao",
+        "Erro de Validação",
         400,
         parsed.error.issues.map((issue) => ({
           field:
@@ -121,7 +121,7 @@ export async function GET(
     const date = url.searchParams.get("date")
 
     if (!barbershopId) {
-      return failure("BAD_REQUEST", "barbershopId e obrigatorio", 400)
+      return failure("BAD_REQUEST", "barbershopId é obrigatório", 400)
     }
 
     const auth = await requireAuth(req)

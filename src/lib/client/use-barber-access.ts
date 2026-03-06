@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useCallback, useEffect, useState } from "react"
 import { fetchMeContext, getAccessToken, getTempToken } from "@/lib/client/session"
@@ -51,7 +51,7 @@ export function useBarberAccess() {
       setData({
         ...INITIAL_STATE,
         state: "unauthenticated",
-        error: "Sessao nao encontrada.",
+        error: "Sessão não encontrada.",
       })
       return
     }
@@ -118,7 +118,7 @@ export function useBarberAccess() {
       setData({
         ...INITIAL_STATE,
         state: "unauthenticated",
-        error: "Nao foi possivel validar sua sessao.",
+        error: "Não foi possível validar Sua sessão.",
       })
     }
   }, [])

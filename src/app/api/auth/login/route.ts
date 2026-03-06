@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server"
+﻿import { NextRequest } from "next/server"
 import { setAccessSessionCookies, setTempSessionCookies } from "@/lib/auth/session-cookies"
 import { prisma } from "@/lib/db/prisma"
 import { AUTH_ERRORS } from "@/lib/errors/auth-errors"
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de validacao",
+        "Erro de Validação",
         400,
         parsed.error.issues.map((issue) => ({
           field:

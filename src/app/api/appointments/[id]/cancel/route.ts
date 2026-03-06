@@ -1,4 +1,4 @@
-import { z } from "zod"
+﻿import { z } from "zod"
 import { requireAuth } from "@/lib/auth/require-auth"
 import { prisma } from "@/lib/db/prisma"
 import { APPOINTMENT_ERRORS } from "@/lib/errors/appointment-errors"
@@ -9,7 +9,7 @@ import { rateLimit } from "@/lib/security/rate-limit"
 import { cancelAppointmentSchema } from "@/lib/validators/appointment"
 
 const paramsSchema = z.object({
-  id: z.string().uuid("id invalido."),
+  id: z.string().uuid("id inválido."),
 })
 
 export async function POST(
@@ -36,7 +36,7 @@ export async function POST(
     if (!parsedParams.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de validacao",
+        "Erro de Validação",
         400,
         parsedParams.error.issues.map((issue) => ({
           field:
@@ -52,7 +52,7 @@ export async function POST(
     if (!parsedBody.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de validacao",
+        "Erro de Validação",
         400,
         parsedBody.error.issues.map((issue) => ({
           field:

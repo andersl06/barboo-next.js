@@ -1,4 +1,4 @@
-import Link from "next/link"
+﻿import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { PremiumBackground } from "@/components/background"
 import { prisma } from "@/lib/db/prisma"
@@ -35,7 +35,7 @@ export default async function BarbershopByIdPage({ params }: ByIdPageProps) {
       <section className="relative z-10 mx-auto w-full max-w-3xl rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(20,24,54,0.9)_0%,rgba(13,17,41,0.94)_100%)] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.6)]">
         <h1 className="text-3xl font-bold">{barbershop.name}</h1>
         <p className="mt-2 text-sm text-[#a7b1d0] md:text-base">
-          A pagina publica da barbearia ainda nao tem slug configurada.
+          A página pública da barbearia ainda não tem slug configurada.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
           <Link

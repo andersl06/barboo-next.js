@@ -1,4 +1,4 @@
-import { buildSupabaseHeaders, getSupabaseServerConfig } from "@/lib/integrations/supabase/server-client"
+﻿import { buildSupabaseHeaders, getSupabaseServerConfig } from "@/lib/integrations/supabase/server-client"
 
 const BUCKET = "barbershop-media"
 

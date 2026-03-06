@@ -1,4 +1,4 @@
-import { AuthContainer } from "@/components/auth/AuthContainer"
+﻿import { AuthContainer } from "@/components/auth/AuthContainer"
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm"
 
 type ResetPasswordPageProps = {
@@ -14,7 +14,7 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
   return (
     <AuthContainer
       title="Defina sua nova senha"
-      subtitle="Use o link enviado por email para concluir a recuperacao."
+      subtitle="Use o link enviado por email para concluir a recuperação."
     >
       <ResetPasswordForm token={token} />
     </AuthContainer>

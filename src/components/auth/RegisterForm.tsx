@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -56,14 +56,14 @@ function translateRegisterError(result: Extract<ApiResult<{ id: string }>, { suc
       : undefined
 
     if (field === "email") {
-      return "Este email ja esta cadastrado."
+      return "Este email Já esta cadastrado."
     }
 
     if (field === "cpf") {
-      return "Este CPF ja esta cadastrado."
+      return "Este CPF Já esta cadastrado."
     }
 
-    return "Ja existe um cadastro com estes dados."
+    return "Já existe um cadastro com estes dados."
   }
 
   if (result.code === "VALIDATION_ERROR") {
@@ -75,7 +75,7 @@ function translateRegisterError(result: Extract<ApiResult<{ id: string }>, { suc
     return "Dados invalidos. Revise os campos."
   }
 
-  return "Nao foi possivel concluir o cadastro agora."
+  return "Não foi possível concluir o cadastro agora."
 }
 
 export function RegisterForm({ onboardingIntent }: { onboardingIntent: RegisterIntent }) {
@@ -94,7 +94,7 @@ export function RegisterForm({ onboardingIntent }: { onboardingIntent: RegisterI
     setError(null)
 
     if (password !== confirmPassword) {
-      setError("As senhas nao conferem.")
+      setError("As senhas não conferem.")
       return
     }
 
@@ -127,7 +127,7 @@ export function RegisterForm({ onboardingIntent }: { onboardingIntent: RegisterI
         : "/cliente/localizacao?next=%2Fcliente%2Fbarbearias-proximas"
       router.push(`/login?registered=1&next=${encodeURIComponent(next)}`)
     } catch {
-      setError("Falha de conexao. Tente novamente.")
+      setError("Falha de conexão. Tente novamente.")
     } finally {
       setLoading(false)
     }
@@ -163,7 +163,7 @@ export function RegisterForm({ onboardingIntent }: { onboardingIntent: RegisterI
           className={inputClassName}
           type="email"
           value={email}
-          placeholder="voce@email.com"
+          placeholder="Você@email.com"
           onChange={(event) => setEmail(normalizeEmail(event.target.value))}
           required
         />
@@ -210,7 +210,7 @@ export function RegisterForm({ onboardingIntent }: { onboardingIntent: RegisterI
             className={inputClassName}
             type="password"
             value={password}
-            placeholder="Minimo de 6 caracteres"
+            placeholder="mínimo de 6 caracteres"
             onChange={(event) => setPassword(event.target.value)}
             required
           />
@@ -236,7 +236,7 @@ export function RegisterForm({ onboardingIntent }: { onboardingIntent: RegisterI
       </UIButton>
 
       <p className="text-sm text-[#a8b3d9]">
-        Ja possui conta?{" "}
+        Já possui conta?{" "}
         <Link className="font-semibold text-[#8db0ff] hover:text-[#b0c8ff]" href="/login">
           Fazer login
         </Link>

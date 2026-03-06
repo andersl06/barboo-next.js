@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { FormEvent, useCallback, useEffect, useState } from "react"
@@ -92,7 +92,7 @@ export default function ClientePerfilPage() {
       setEmail(result.data.email)
       setScreen("ready")
     } catch {
-      setError("Falha de conexao ao carregar perfil.")
+      setError("Falha de conexão ao carregar perfil.")
     }
   }, [])
 
@@ -139,7 +139,7 @@ export default function ClientePerfilPage() {
       setPhone(formatPhone(result.data.phone ?? ""))
       setSuccess("Dados pessoais atualizados com sucesso.")
     } catch {
-      setError("Falha de conexao ao salvar dados pessoais.")
+      setError("Falha de conexão ao salvar dados pessoais.")
     } finally {
       setSavingProfile(false)
     }
@@ -182,7 +182,7 @@ export default function ClientePerfilPage() {
       setConfirmPassword("")
       setSuccess("Senha alterada com sucesso.")
     } catch {
-      setError("Falha de conexao ao alterar senha.")
+      setError("Falha de conexão ao alterar senha.")
     } finally {
       setSavingPassword(false)
     }
@@ -193,7 +193,7 @@ export default function ClientePerfilPage() {
       <main className="relative min-h-[100svh] overflow-hidden bg-[#070B16] px-4 py-8 text-[#f1f2f7] md:px-8 md:py-12">
         <PremiumBackground />
         <section className="relative z-10 mx-auto max-w-3xl rounded-3xl border border-white/10 bg-[#0d1434]/80 p-6 text-center">
-          <p className="text-[#d0d7ef]">Voce precisa fazer login para acessar seu perfil.</p>
+          <p className="text-[#d0d7ef]">Você precisa fazer login para acessar seu perfil.</p>
           <Link className="mt-4 inline-flex rounded-lg border border-white/15 px-4 py-2" href="/login">
             Ir para login
           </Link>

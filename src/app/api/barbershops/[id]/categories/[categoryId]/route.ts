@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client"
+﻿import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/db/prisma"
 import { requireAuth } from "@/lib/auth/require-auth"
 import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"

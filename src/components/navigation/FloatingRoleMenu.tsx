@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -102,7 +102,7 @@ function resolveScope(pathname: string): MenuScope {
 }
 
 function roleLabel(scope: MenuScope) {
-  if (scope === "owner") return "Proprietario"
+  if (scope === "owner") return "Proprietário"
   if (scope === "barber") return "Barbeiro"
   return "Cliente"
 }
@@ -116,8 +116,8 @@ function formatDateTime(value: string) {
 }
 
 function statusLabel(status: AppointmentOverviewItem["status"]) {
-  if (status === "COMPLETED") return "Concluido"
-  if (status === "CONFIRMED") return "Concluido"
+  if (status === "COMPLETED") return "Concluído"
+  if (status === "CONFIRMED") return "Concluído"
   if (status === "CANCELED") return "Cancelado"
   return "Recusado"
 }
@@ -156,10 +156,11 @@ function resolveMenuItems(scope: MenuScope, context: MeContextData | null): Menu
         : "/owner/barbershop/edit"
 
     return [
-      { href: "/cliente/barbearias-proximas", label: "Inicio", icon: "home" },
+      { href: "/cliente/barbearias-proximas", label: "Início", icon: "home" },
+      { href: "/owner/dashboard", label: "Dashboard", icon: "settings" },
       { href: "/owner/barbershop/edit", label: "Editar barbearia", icon: "settings" },
       { href: "/owner/categories", label: "Categorias", icon: "settings" },
-      { href: "/owner/services", label: "Servicos", icon: "settings" },
+      { href: "/owner/services", label: "Serviços", icon: "settings" },
       { href: "/owner/team", label: "Equipe", icon: "team" },
       { href: "/owner/availability", label: "Agenda", icon: "calendar" },
       { href: "/owner/finance", label: "Financas", icon: "money" },
@@ -170,7 +171,7 @@ function resolveMenuItems(scope: MenuScope, context: MeContextData | null): Menu
 
   if (scope === "barber") {
     return [
-      { href: "/cliente/barbearias-proximas", label: "Inicio", icon: "home" },
+      { href: "/cliente/barbearias-proximas", label: "Início", icon: "home" },
       { href: "/barber/dashboard", label: "Dashboard", icon: "settings" },
       { href: "/barber/agenda", label: "Agenda", icon: "calendar" },
       { href: "/barber/edit", label: "Meu perfil", icon: "user" },
@@ -178,11 +179,23 @@ function resolveMenuItems(scope: MenuScope, context: MeContextData | null): Menu
   }
 
   return [
-    { href: "/cliente/barbearias-proximas", label: "Inicio", icon: "home" },
+    { href: "/cliente/barbearias-proximas", label: "Início", icon: "home" },
     { href: "/client/agenda", label: "Meus agendamentos", icon: "calendar" },
     { href: "/client/favorites", label: "Favoritos", icon: "heart" },
     { href: "/client/profile", label: "Meu perfil", icon: "user" },
   ]
+}
+
+function resolveOwnerMenuItems(context: MeContextData | null) {
+  return resolveMenuItems("owner", context)
+}
+
+function resolveBarberMenuItems() {
+  return resolveMenuItems("barber", null)
+}
+
+function resolveClientMenuItems() {
+  return resolveMenuItems("client", null)
 }
 
 function resolveOverviewLink(scope: MenuScope) {
@@ -307,7 +320,9 @@ export function FloatingRoleMenu() {
   const hasSessionMarker = Boolean(getAccessToken())
   const overviewScope = resolveOverviewScope(scope, context)
 
-  const menuItems = useMemo(() => resolveMenuItems(scope, context), [scope, context])
+  const ownerMenuItems = useMemo(() => resolveOwnerMenuItems(context), [context])
+  const barberMenuItems = useMemo(() => resolveBarberMenuItems(), [])
+  const clientMenuItems = useMemo(() => resolveClientMenuItems(), [])
   const overviewLink = resolveOverviewLink(overviewScope)
 
   const loadContext = useCallback(async () => {
@@ -356,7 +371,7 @@ export function FloatingRoleMenu() {
       setOverview(result.data)
     } catch {
       setOverview(null)
-      setOverviewError("Nao foi possivel carregar os agendamentos agora.")
+      setOverviewError("Não foi possível carregar os agendamentos agora.")
     } finally {
       setLoadingOverview(false)
     }
@@ -431,9 +446,28 @@ export function FloatingRoleMenu() {
     return null
   }
 
-  const currentRoleLabel = roleLabel(scope)
+  const hasOwnerAccess = Boolean(context.ownerBarbershopId)
+  const hasBarberAccess = Boolean(context.barberBarbershopId || context.hasBarberProfile || context.effectiveRole === "BARBER")
+  const currentRoleLabel = hasOwnerAccess && hasBarberAccess
+    ? "Proprietário e barbeiro"
+    : hasOwnerAccess
+      ? "Proprietário"
+      : hasBarberAccess
+        ? "Barbeiro"
+        : roleLabel(scope)
   const userName = context.user.name.trim().length > 0 ? context.user.name.trim() : currentRoleLabel
   const greeting = `Ola, ${userName}!`
+
+  const filteredBarberMenuItems = (!hasOwnerAccess || !hasBarberAccess)
+    ? barberMenuItems
+    : barberMenuItems.filter((item) => !["Início", "Meu perfil", "Agenda"].includes(item.label))
+
+  const menuSections = (hasOwnerAccess || hasBarberAccess)
+    ? [
+        ...(hasOwnerAccess ? [{ title: "Owner", items: ownerMenuItems }] : []),
+        ...(hasBarberAccess ? [{ title: "Barber", items: filteredBarberMenuItems }] : []),
+      ]
+    : [{ title: "Menu", items: clientMenuItems }]
 
   return (
     <>
@@ -484,7 +518,7 @@ export function FloatingRoleMenu() {
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4">
             <section className="space-y-2 rounded-2xl border border-white/10 bg-[#0a1331]/85 p-3">
               <div className="flex items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold">Proximos Agendamentos</h3>
+                <h3 className="text-sm font-semibold">Próximos Agendamentos</h3>
                 <Link
                   href={overviewLink}
                   className="text-xs font-semibold text-[#f5b28b] hover:text-[#ffd6bf]"
@@ -561,49 +595,51 @@ export function FloatingRoleMenu() {
               )}
             </section>
 
-            <section className="rounded-2xl border border-white/10 bg-[#0a1331]/85 p-3">
-              <h3 className="text-sm font-semibold">Menu</h3>
-              <div className="mt-2 space-y-1">
-                {menuItems.map((item) => {
-                  const isActive = pathname === item.href
+            {menuSections.map((section) => (
+              <section key={section.title} className="rounded-2xl border border-white/10 bg-[#0a1331]/85 p-3">
+                <h3 className="text-sm font-semibold">{section.title}</h3>
+                <div className="mt-2 space-y-1">
+                  {section.items.map((item) => {
+                    const isActive = pathname === item.href
 
-                  if (item.disabled) {
-                    return (
-                      <div
-                        key={item.href}
-                        className="flex items-center justify-between rounded-xl border border-white/10 bg-[#0b1433]/65 px-3 py-2 text-sm text-[#8d98bc] opacity-70"
-                        title="Em breve"
-                      >
-                        <span className="flex items-center gap-2.5">
-                          <Icon kind={item.icon} />
-                          {item.label}
-                        </span>
-                        {item.soon ? (
-                          <span className="rounded-full border border-[#f36c20]/30 bg-[#f36c20]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#ffcfb4]">
-                            Em breve
+                    if (item.disabled) {
+                      return (
+                        <div
+                          key={item.href}
+                          className="flex items-center justify-between rounded-xl border border-white/10 bg-[#0b1433]/65 px-3 py-2 text-sm text-[#8d98bc] opacity-70"
+                          title="Em breve"
+                        >
+                          <span className="flex items-center gap-2.5">
+                            <Icon kind={item.icon} />
+                            {item.label}
                           </span>
-                        ) : null}
-                      </div>
-                    )
-                  }
+                          {item.soon ? (
+                            <span className="rounded-full border border-[#f36c20]/30 bg-[#f36c20]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#ffcfb4]">
+                              Em breve
+                            </span>
+                          ) : null}
+                        </div>
+                      )
+                    }
 
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`flex items-center gap-2.5 rounded-xl border px-3 py-2 text-sm font-medium transition ${
-                        isActive
-                          ? "border-[#f36c20]/50 bg-[#f36c20]/18 text-[#ffe4d6]"
-                          : "border-white/10 bg-[#0b1433]/65 text-[#d2daf4] hover:border-white/20 hover:bg-[#111b45]"
-                      }`}
-                    >
-                      <Icon kind={item.icon} />
-                      <span>{item.label}</span>
-                    </Link>
-                  )
-                })}
-              </div>
-            </section>
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`flex items-center gap-2.5 rounded-xl border px-3 py-2 text-sm font-medium transition ${
+                          isActive
+                            ? "border-[#f36c20]/50 bg-[#f36c20]/18 text-[#ffe4d6]"
+                            : "border-white/10 bg-[#0b1433]/65 text-[#d2daf4] hover:border-white/20 hover:bg-[#111b45]"
+                        }`}
+                      >
+                        <Icon kind={item.icon} />
+                        <span>{item.label}</span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </section>
+            ))}
 
             {overviewError ? (
               <p className="rounded-xl border border-amber-300/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">

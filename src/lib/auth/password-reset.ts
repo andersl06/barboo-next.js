@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "crypto"
+﻿import { createHash, randomBytes } from "crypto"
 
 const DEFAULT_TTL_MINUTES = 30
 const MIN_TTL_MINUTES = 5

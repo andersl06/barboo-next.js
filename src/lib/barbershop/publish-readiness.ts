@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db/prisma"
+﻿import { prisma } from "@/lib/db/prisma"
 
 type ReadinessItem = {
   key: string
@@ -91,7 +91,7 @@ export async function getBarbershopPublishReadiness(
       key: "description",
       field: "description",
       ok: hasText(barbershop.description),
-      message: "Adicione uma descricao da barbearia.",
+      message: "Adicione uma Descrição da barbearia.",
     },
     {
       key: "logo",
@@ -115,13 +115,13 @@ export async function getBarbershopPublishReadiness(
         hasText(barbershop.city) &&
         hasText(barbershop.state) &&
         hasText(barbershop.zipCode),
-      message: "Preencha o endereco completo da barbearia.",
+      message: "Preencha o Endereço completo da barbearia.",
     },
     {
       key: "location",
       field: "location",
       ok: barbershop.latitude !== null && barbershop.longitude !== null,
-      message: "Defina a localizacao da barbearia.",
+      message: "Defina a localização da barbearia.",
     },
     {
       key: "barbers",
@@ -139,7 +139,7 @@ export async function getBarbershopPublishReadiness(
       key: "services",
       field: "services",
       ok: activeServices > 0,
-      message: "Crie ao menos um servico ativo.",
+      message: "Crie ao menos um Serviço ativo.",
     },
   ]
 

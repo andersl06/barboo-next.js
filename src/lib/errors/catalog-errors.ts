@@ -1,4 +1,4 @@
-export const CATALOG_ERRORS = {
+﻿export const CATALOG_ERRORS = {
   CATEGORY_NAME_REQUIRED: {
     field: "name" as const,
     code: "CATEGORY_NAME_REQUIRED" as const,

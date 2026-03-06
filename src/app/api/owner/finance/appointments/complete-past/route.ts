@@ -1,4 +1,4 @@
-import { markPastConfirmedAppointmentsAsCompleted } from "@/lib/finance/appointments"
+﻿import { markPastConfirmedAppointmentsAsCompleted } from "@/lib/finance/appointments"
 import { requireOwnerFinanceContext } from "@/lib/finance/owner-context"
 import { refreshBarbershopFinancialState } from "@/lib/finance/invoices"
 import { failure, success } from "@/lib/http/api-response"

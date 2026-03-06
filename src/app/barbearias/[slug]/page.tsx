@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
@@ -93,8 +93,8 @@ const WEEK_DAYS: Array<{ key: DayKey; label: string }> = [
 
 const TABS: Array<{ id: ActiveTab; label: string }> = [
   { id: "overview", label: "Visao geral" },
-  { id: "services", label: "Servicos" },
-  { id: "location", label: "Localizacao" },
+  { id: "services", label: "Serviços" },
+  { id: "location", label: "Localização" },
   { id: "team", label: "Equipe" },
 ]
 
@@ -220,7 +220,7 @@ function OverviewSection({
       <h2 className="text-xl font-semibold">Visao geral</h2>
 
       <p className="mt-3 text-sm leading-relaxed text-[#d2daf3] md:text-base">
-        {description?.trim() || "Descricao da barbearia ainda nao informada."}
+        {description?.trim() || "Descrição da barbearia ainda não informada."}
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2">
@@ -230,7 +230,7 @@ function OverviewSection({
           </span>
         ) : (
           <span className="rounded-lg border border-white/15 bg-[#0a112c]/75 px-3 py-1.5 text-sm text-[#e8eeff]">
-            Telefone nao informado
+            Telefone não informado
           </span>
         )}
 
@@ -257,7 +257,7 @@ function OverviewSection({
 
       <div className="mt-5">
         <h3 className="text-sm font-semibold uppercase tracking-[0.08em] text-[#b8c5ea]">
-          Horarios de funcionamento
+          Horários de funcionamento
         </h3>
         <div className="mt-2 space-y-1.5">
           {openingRows.map((row) => (
@@ -286,7 +286,7 @@ function ServicesSection({
 }) {
   return (
     <article className="rounded-2xl border border-white/12 bg-[#0b1330]/84 p-4 md:p-5">
-      <h2 className="text-xl font-semibold">Servicos</h2>
+      <h2 className="text-xl font-semibold">Serviços</h2>
 
       <div className="mt-3">
         <h3 className="text-sm font-semibold uppercase tracking-[0.08em] text-[#b8c5ea]">Categorias</h3>
@@ -347,13 +347,13 @@ function ServicesSection({
             ))
         ) : (
           <p className="rounded-lg border border-white/10 bg-[#0a112c]/70 p-3 text-sm text-[#c6d1ef]">
-            Nenhum servico publicado.
+            Nenhum Serviço publicado.
           </p>
         )}
 
         {serviceGroups.length > 0 && serviceGroups.every((group) => !(openServiceGroups[group.id] ?? true)) ? (
           <p className="rounded-lg border border-white/10 bg-[#0a112c]/70 p-3 text-sm text-[#c6d1ef]">
-            Nenhuma categoria aberta. Clique em uma categoria para visualizar os servicos.
+            Nenhuma categoria aberta. Clique em uma categoria para visualizar os Serviços.
           </p>
         ) : null}
       </div>
@@ -372,7 +372,7 @@ function LocationSection({
 }) {
   return (
     <article className="rounded-2xl border border-white/12 bg-[#0b1330]/84 p-4 md:p-5">
-      <h2 className="text-xl font-semibold">Localizacao</h2>
+      <h2 className="text-xl font-semibold">Localização</h2>
 
       <div className="mt-3 rounded-xl border border-white/10 bg-[#0a112c]/72 p-4">
         <p className="text-sm text-[#d0d9f5]">{addressText}</p>
@@ -416,7 +416,7 @@ function TeamSection({ barbers }: { barbers: BarbershopDetail["barbers"] }) {
                   </div>
                   <div>
                     <p className="font-semibold">{barber.name}</p>
-                    <p className="mt-0.5 text-sm text-[#c6d1ef]">{barber.bio ?? "Perfil em configuracao."}</p>
+                    <p className="mt-0.5 text-sm text-[#c6d1ef]">{barber.bio ?? "Perfil em configuração."}</p>
                   </div>
                 </div>
                 <span className="rounded-full border border-emerald-300/30 bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-100">
@@ -468,7 +468,7 @@ export default function BarbeariaDetalhePage() {
           setBarbershop(result.data)
           setState("ready")
         } catch {
-          setError("Falha de conexao ao carregar a barbearia.")
+          setError("Falha de conexão ao carregar a barbearia.")
           setState("error")
         }
       })()
@@ -587,16 +587,16 @@ export default function BarbeariaDetalhePage() {
 
   const hasShopCoordinates = barbershop?.latitude !== null && barbershop?.longitude !== null
   const distanceHint = !hasShopCoordinates
-    ? "Distancia indisponivel."
+    ? "distância indisponivel."
     : distanceKm !== null
-      ? `Aproximadamente ${distanceKm.toFixed(1)} km de voce.`
+      ? `Aproximadamente ${distanceKm.toFixed(1)} km de Você.`
       : distanceStatus === "calculating"
-        ? "Calculando distancia..."
+        ? "Calculando distância..."
         : distanceStatus === "permission_denied"
-          ? "Permita sua localizacao para calcular a distancia."
+          ? "Permita Sua localização para calcular a distância."
           : distanceStatus === "unsupported"
-            ? "Navegador sem suporte a localizacao."
-            : "Nao foi possivel calcular a distancia."
+            ? "Navegador sem suporte a localização."
+            : "Não foi possível calcular a distância."
 
   if (state === "loading") {
     if (!slug) {
@@ -604,7 +604,7 @@ export default function BarbeariaDetalhePage() {
         <main className="relative min-h-[100svh] overflow-hidden bg-[#070B16] px-4 py-8 text-[#f1f2f7] md:px-8 md:py-12">
           <PremiumBackground />
           <section className="relative z-10 mx-auto max-w-4xl rounded-3xl border border-white/10 bg-[#0d1434]/80 p-6">
-            <h1 className="text-2xl font-bold">Slug invalido</h1>
+            <h1 className="text-2xl font-bold">Slug inválido</h1>
             <p className="mt-2 text-sm text-[#c5cee9]">A URL da barbearia esta incompleta.</p>
             <Link className="mt-4 inline-flex rounded-lg border border-white/15 px-4 py-2 text-sm" href="/">
               Voltar para home
@@ -629,7 +629,7 @@ export default function BarbeariaDetalhePage() {
       <main className="relative min-h-[100svh] overflow-hidden bg-[#070B16] px-4 py-8 text-[#f1f2f7] md:px-8 md:py-12">
         <PremiumBackground />
         <section className="relative z-10 mx-auto max-w-4xl rounded-3xl border border-white/10 bg-[#0d1434]/80 p-6">
-          <h1 className="text-2xl font-bold">Nao foi possivel abrir a barbearia</h1>
+          <h1 className="text-2xl font-bold">Não foi possível abrir a barbearia</h1>
           <p className="mt-2 text-sm text-[#c5cee9]">{error ?? "Erro inesperado."}</p>
           <Link className="mt-4 inline-flex rounded-lg border border-white/15 px-4 py-2 text-sm" href="/">
             Voltar para home
@@ -647,7 +647,7 @@ export default function BarbeariaDetalhePage() {
   const addressText =
     [barbershop.address, barbershop.addressNumber, barbershop.neighborhood, barbershop.city, barbershop.state]
       .filter(Boolean)
-      .join(", ") || "Endereco ainda nao informado."
+      .join(", ") || "Endereço ainda não informado."
 
   const handleStartBooking = (serviceId?: string) => {
     const token = getAccessToken()
@@ -686,7 +686,7 @@ export default function BarbeariaDetalhePage() {
                 </span>
               </div>
               <p className="mt-3 text-sm text-[#d0d9f5] md:text-base">
-                {locationText || "Endereco em atualizacao"}
+                {locationText || "Endereço em atualizacao"}
               </p>
 
               <div className="mt-5 flex flex-wrap gap-2.5">

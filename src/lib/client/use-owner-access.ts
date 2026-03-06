@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useCallback, useEffect, useState } from "react"
 import { fetchMeContext, getAccessToken } from "@/lib/client/session"
@@ -35,7 +35,7 @@ export function useOwnerAccess() {
     if (!token) {
       setData({
         state: "unauthenticated",
-        error: "Sessao nao encontrada.",
+        error: "Sessão não encontrada.",
         token: null,
         userName: null,
         ownerBarbershopId: null,
@@ -81,7 +81,7 @@ export function useOwnerAccess() {
     } catch {
       setData({
         state: "unauthenticated",
-        error: "Nao foi possivel validar sua sessao.",
+        error: "Não foi possível validar Sua sessão.",
         token: null,
         userName: null,
         ownerBarbershopId: null,

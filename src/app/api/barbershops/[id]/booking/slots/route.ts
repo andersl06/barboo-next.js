@@ -1,4 +1,4 @@
-import {
+﻿import {
   buildAvailableSlots,
   getBusinessDateBounds,
   normalizeBusinessDate,
@@ -30,7 +30,7 @@ export async function GET(
     if (!parsed.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de validacao",
+        "Erro de Validação",
         400,
         parsed.error.issues.map((issue) => ({
           field:
@@ -79,7 +79,7 @@ export async function GET(
     ])
 
     if (!barbershop) {
-      return failure("BARBERSHOP_NOT_FOUND", "Barbearia nao encontrada.", 404)
+      return failure("BARBERSHOP_NOT_FOUND", "Barbearia não encontrada.", 404)
     }
 
     if (!barber) {

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db/prisma"
+﻿import { prisma } from "@/lib/db/prisma"
 import { hashPassword } from "@/lib/security/bcrypt"
 import { success, failure } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
@@ -16,7 +16,7 @@ export async function GET(
     const barbershopId = resolvedParams?.id
 
     if (!barbershopId) {
-      return failure("BAD_REQUEST", "ID da barbearia e obrigatorio", 400)
+      return failure("BAD_REQUEST", "ID da barbearia é obrigatório", 400)
     }
 
     const auth = await requireAuth(req)

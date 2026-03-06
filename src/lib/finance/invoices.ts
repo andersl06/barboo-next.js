@@ -1,10 +1,10 @@
-import type { FinanceInvoiceStatus, Prisma, PrismaClient } from "@prisma/client"
+﻿import type { FinanceInvoiceStatus, Prisma, PrismaClient } from "@prisma/client"
 import { prisma } from "@/lib/db/prisma"
 
 const BUSINESS_TIMEZONE = "America/Sao_Paulo"
-const FINANCIAL_BLOCK_REASON = "Financeiro: pendencia em fatura semanal vencida."
+const FINANCIAL_BLOCK_REASON = "Financeiro: Pendência em fatura semanal vencida."
 
-function toBusinessDate(value: Date) {
+export function toBusinessDate(value: Date) {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: BUSINESS_TIMEZONE,
     year: "numeric",
@@ -22,6 +22,14 @@ function addDays(date: string, days: number) {
   const mm = String(probe.getUTCMonth() + 1).padStart(2, "0")
   const dd = String(probe.getUTCDate()).padStart(2, "0")
   return `${yyyy}-${mm}-${dd}`
+}
+
+export function addBusinessDays(date: string, days: number) {
+  return addDays(date, days)
+}
+
+export function getCurrentBusinessDate() {
+  return toBusinessDate(new Date())
 }
 
 export function parseBusinessDateToUtc(date: string) {
@@ -42,6 +50,10 @@ export function getWeeklyPeriod(weekDate?: string) {
   const daysSinceMonday = (weekday + 6) % 7
 
   const periodStartDate = addDays(normalizedDate, -daysSinceMonday)
+  return buildWeeklyPeriodFromStart(periodStartDate)
+}
+
+export function buildWeeklyPeriodFromStart(periodStartDate: string) {
   const periodEndDate = addDays(periodStartDate, 6)
   const periodEndExclusiveDate = addDays(periodStartDate, 7)
 
@@ -56,6 +68,20 @@ export function getWeeklyPeriod(weekDate?: string) {
     periodEndExclusiveAt,
     dueAt,
   }
+}
+
+export function getRollingWeeklyPeriod(anchorDate: string, referenceDate?: string) {
+  const normalizedReference = referenceDate && /^\d{4}-\d{2}-\d{2}$/.test(referenceDate)
+    ? referenceDate
+    : toBusinessDate(new Date())
+
+  const anchorAt = parseBusinessDateToUtc(anchorDate).getTime()
+  const referenceAt = parseBusinessDateToUtc(normalizedReference).getTime()
+  const diffDays = Math.floor((referenceAt - anchorAt) / (24 * 60 * 60 * 1000))
+  const cycles = diffDays > 0 ? Math.floor(diffDays / 7) : 0
+  const periodStartDate = addDays(anchorDate, cycles * 7)
+
+  return buildWeeklyPeriodFromStart(periodStartDate)
 }
 
 export function formatPeriodLabel(start: Date, end: Date) {

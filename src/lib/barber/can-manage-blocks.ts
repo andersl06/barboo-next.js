@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db/prisma"
+﻿import { prisma } from "@/lib/db/prisma"
 import { SCHEDULE_ERRORS } from "@/lib/errors/schedule-errors"
 import type { MembershipRole } from "@prisma/client"
 

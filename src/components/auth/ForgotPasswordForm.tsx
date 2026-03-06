@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { FormEvent, useState } from "react"
@@ -33,7 +33,7 @@ function translateError(result: Extract<ApiResult<ForgotPasswordResponse>, { suc
     return "Muitas tentativas. Aguarde alguns minutos para tentar novamente."
   }
 
-  return "Nao foi possivel enviar o link agora. Tente novamente."
+  return "Não foi possível enviar o link agora. Tente novamente."
 }
 
 export function ForgotPasswordForm() {
@@ -65,7 +65,7 @@ export function ForgotPasswordForm() {
 
       setInfo(result.data.message)
     } catch {
-      setError("Falha de conexao. Tente novamente.")
+      setError("Falha de conexão. Tente novamente.")
     } finally {
       setLoading(false)
     }
@@ -93,14 +93,14 @@ export function ForgotPasswordForm() {
           className={inputClassName}
           type="email"
           value={email}
-          placeholder="voce@email.com"
+          placeholder="Você@email.com"
           onChange={(event) => setEmail(normalizeEmail(event.target.value))}
           required
         />
       </label>
 
       <UIButton type="submit" className="w-full" disabled={loading}>
-        {loading ? "Enviando..." : "Enviar link de recuperacao"}
+        {loading ? "Enviando..." : "Enviar link de recuperação"}
       </UIButton>
 
       <p className="text-sm text-[#a8b3d9]">

@@ -1,4 +1,4 @@
-import { requireAuth } from "@/lib/auth/require-auth"
+﻿import { requireAuth } from "@/lib/auth/require-auth"
 import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"
 import { prisma } from "@/lib/db/prisma"
 import { APPOINTMENT_ERRORS } from "@/lib/errors/appointment-errors"
@@ -28,7 +28,7 @@ export async function PATCH(
     if (!parsed.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de validacao",
+        "Erro de Validação",
         400,
         parsed.error.issues.map((issue) => ({
           field:

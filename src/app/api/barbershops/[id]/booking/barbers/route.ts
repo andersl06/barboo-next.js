@@ -1,4 +1,4 @@
-import { listBookableBarbers } from "@/lib/appointments/bookable-barbers"
+﻿import { listBookableBarbers } from "@/lib/appointments/bookable-barbers"
 import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"
 import { getClientIp } from "@/lib/http/client-ip"
 import { failure, success } from "@/lib/http/api-response"

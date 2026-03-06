@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
@@ -101,7 +101,7 @@ export default function ClienteFavoritosPage() {
       setItems(result.data.items)
       setScreen(result.data.items.length > 0 ? "ready" : "empty")
     } catch {
-      setError("Falha de conexao ao carregar favoritos.")
+      setError("Falha de conexão ao carregar favoritos.")
       setScreen("empty")
     } finally {
       setRefreshing(false)
@@ -144,7 +144,7 @@ export default function ClienteFavoritosPage() {
       setItems(nextItems)
       setScreen(nextItems.length > 0 ? "ready" : "empty")
     } catch {
-      setError("Falha de conexao ao remover favorito.")
+      setError("Falha de conexão ao remover favorito.")
     } finally {
       setRemovingId(null)
     }
@@ -155,7 +155,7 @@ export default function ClienteFavoritosPage() {
       <main className="relative min-h-[100svh] overflow-hidden bg-[#070B16] px-4 py-8 text-[#f1f2f7] md:px-8 md:py-12">
         <PremiumBackground />
         <section className="relative z-10 mx-auto max-w-3xl rounded-3xl border border-white/10 bg-[#0d1434]/80 p-6 text-center">
-          <p className="text-[#d0d7ef]">Voce precisa fazer login para acessar favoritos.</p>
+          <p className="text-[#d0d7ef]">Você precisa fazer login para acessar favoritos.</p>
           <Link className="mt-4 inline-flex rounded-lg border border-white/15 px-4 py-2" href="/login">
             Ir para login
           </Link>
@@ -172,7 +172,7 @@ export default function ClienteFavoritosPage() {
           <div>
             <h1 className="text-3xl font-bold">Favoritos</h1>
             <p className="mt-1 text-sm text-[#a7b1d0] md:text-base">
-              Suas barbearias favoritas em um so lugar.
+              Suas barbearias favoritas em um só lugar.
             </p>
           </div>
           <UIButton
@@ -204,9 +204,9 @@ export default function ClienteFavoritosPage() {
           </div>
         ) : screen === "empty" ? (
           <div className="mt-6 rounded-2xl border border-white/12 bg-[#0b1330]/80 p-5">
-            <p className="text-base font-semibold text-[#dbe4ff]">Voce ainda nao tem favoritos</p>
+            <p className="text-base font-semibold text-[#dbe4ff]">Você ainda não tem favoritos</p>
             <p className="mt-1 text-sm text-[#b7c3e7]">
-              Explore barbearias proximas e adicione suas preferidas.
+              Explore barbearias Próximas e adicione suas preferidas.
             </p>
             <UIButton href="/cliente/barbearias-proximas" className="mt-4 !w-auto !px-4 !py-2 !text-sm">
               Encontrar barbearias
@@ -236,7 +236,7 @@ export default function ClienteFavoritosPage() {
                     <div className="min-w-0">
                       <h2 className="truncate text-lg font-semibold">{item.barbershop.name}</h2>
                       <p className="truncate text-xs text-[#a7b1d0]">
-                        {[item.barbershop.neighborhood, item.barbershop.city].filter(Boolean).join(" - ") || "Local nao informado"}
+                        {[item.barbershop.neighborhood, item.barbershop.city].filter(Boolean).join(" - ") || "Local não informado"}
                       </p>
                     </div>
                   </div>
@@ -253,7 +253,7 @@ export default function ClienteFavoritosPage() {
                       {item.barbershop.rating.toFixed(1)} ({item.barbershop.ratingCount})
                     </span>
                   ) : (
-                    <span className="rounded-full border border-white/15 px-2 py-0.5 text-[#9eabd4]">Sem avaliacoes</span>
+                    <span className="rounded-full border border-white/15 px-2 py-0.5 text-[#9eabd4]">Sem Avaliações</span>
                   )}
                 </div>
 

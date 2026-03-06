@@ -1,4 +1,4 @@
-import { PremiumBackground } from "@/components/background"
+﻿import { PremiumBackground } from "@/components/background"
 import { FeatureCard } from "@/components/ui/FeatureCard"
 import { HeroHeading } from "@/components/ui/HeroHeading"
 import { UIButton } from "@/components/ui/UIButton"
@@ -20,22 +20,22 @@ export default function Home() {
           titleStart="Conectando"
           highlight="barbeiros"
           titleEnd="e clientes."
-          subtitle="Tenha controle da sua barbearia ou encontre profissionais e horarios com rapidez em uma experiencia moderna e intuitiva."
+          subtitle="Tenha controle da sua barbearia ou encontre profissionais e horários com rapidez em uma experiência moderna e intuitiva."
         />
 
         <div className="mt-10 grid grid-cols-1 gap-5 md:mt-12 md:grid-cols-3 md:gap-6">
           <FeatureCard
-            title="Sou Proprietario"
-            description="Cadastre-se para gerenciar sua barbearia e atrair mais clientes para o seu negocio."
+            title="Sou proprietário"
+            description="Cadastre-se para gerenciar sua barbearia e atrair mais clientes para o seu negócio."
             iconSrc="/assets/icons/file.png"
-            ctaLabel="Comecar"
+            ctaLabel="Começar"
             ctaVariant="secondary"
             ctaHref="/cadastro/proprietario"
           />
 
           <FeatureCard
             title="Sou Cliente"
-            description="Agende cortes e encontre a barbearia ideal para voce com poucos toques."
+            description="Agende cortes e encontre a barbearia ideal para você com poucos toques."
             iconSrc="/assets/icons/user.png"
             ctaLabel="Criar Conta"
             ctaVariant="primary"
@@ -44,7 +44,7 @@ export default function Home() {
 
           <FeatureCard
             title="Encontrar Barbearias"
-            description="Busque barbearias proximas e marque seu horario de forma simples e rapida."
+            description="Busque barbearias próximas e marque seu horário de forma simples e rápida."
             iconSrc="/assets/icons/location.png"
             ctaLabel="Pesquisar"
             ctaVariant="primary"

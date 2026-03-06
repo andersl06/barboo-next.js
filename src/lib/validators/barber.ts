@@ -1,4 +1,4 @@
-import { z } from "zod"
+﻿import { z } from "zod"
 import { isValidCPF } from "./cpf"
 
 const requiredTrimmed = (message: string) =>
@@ -16,8 +16,8 @@ export const createBarberSchema = z.object({
     (value) => (value ? value.length >= 3 : true),
     "Nome muito curto"
   ),
-  email: requiredTrimmed("Email e obrigatorio").pipe(
-    z.string().email("Email invalido")
+  email: requiredTrimmed("Email é obrigatório").pipe(
+    z.string().email("Email inválido")
   ),
   cpf: optionalTrimmed()
     .transform((value) => (value ? value.replace(/\D/g, "") : undefined))
@@ -25,12 +25,12 @@ export const createBarberSchema = z.object({
       (value) =>
         !value
         || (value.length === 11 && /^\d+$/.test(value) && isValidCPF(value)),
-      "CPF invalido"
+      "CPF inválido"
     ),
   phone: optionalTrimmed()
     .transform((value) => (value ? value.replace(/\D/g, "") : undefined))
-    .refine((value) => !value || value.length >= 10, "Telefone invalido"),
-  password: z.string().min(6, "Senha deve ter no minimo 6 caracteres"),
+    .refine((value) => !value || value.length >= 10, "Telefone inválido"),
+  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
 })
 
 export type CreateBarberInput = z.infer<typeof createBarberSchema>

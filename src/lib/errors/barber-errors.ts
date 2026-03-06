@@ -1,4 +1,4 @@
-export const BARBER_ERRORS = {
+﻿export const BARBER_ERRORS = {
   BARBERSHOP_NOT_FOUND: {
     field: undefined,
     code: "DOMAIN_RULE" as const,

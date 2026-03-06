@@ -1,4 +1,4 @@
-import { z } from "zod"
+﻿import { z } from "zod"
 import { CATALOG_ERRORS } from "@/lib/errors/catalog-errors"
 
 const optionalTrimmed = z.preprocess((value) => {

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -143,7 +143,7 @@ export default function BarberDashboardPage() {
 
       if (!upcomingResult.success) {
         if (!silent) {
-          setError(resolveError(upcomingResult, "Falha ao carregar proximos atendimentos."))
+          setError(resolveError(upcomingResult, "Falha ao carregar Próximos atendimentos."))
         }
         return
       }
@@ -152,7 +152,7 @@ export default function BarberDashboardPage() {
       setUpcoming(upcomingResult.data.items)
     } catch {
       if (!silent) {
-        setError("Falha de conexao ao carregar o dashboard do barbeiro.")
+        setError("Falha de conexão ao carregar o dashboard do barbeiro.")
       }
     } finally {
       if (!silent) {
@@ -190,7 +190,7 @@ export default function BarberDashboardPage() {
       setTodayConfirmedCount(todayResult.data.items.length)
       setTotalClients(new Set(clientsResult.data.items.map((item) => item.clientUser.id)).size)
     } catch {
-      // Mantem silencioso para nao poluir UX com erro fora das secoes de polling.
+      // Mantem silencioso para não poluir UX com erro fora das secoes de polling.
     }
   }, [token])
 
@@ -300,7 +300,7 @@ export default function BarberDashboardPage() {
 
       return true
     } catch {
-      setError("Falha de conexao ao atualizar agendamento.")
+      setError("Falha de conexão ao atualizar agendamento.")
       return false
     } finally {
       setProcessingId(null)
@@ -324,7 +324,7 @@ export default function BarberDashboardPage() {
       hint: "Em breve",
     },
     {
-      label: "Avaliacao",
+      label: "Avaliação",
       value: "--",
       hint: "Em breve",
     },
@@ -334,7 +334,7 @@ export default function BarberDashboardPage() {
     return (
       <BarberShell
         title="Dashboard do barbeiro"
-        subtitle="Resumo rapido da operacao e proximos atendimentos."
+        subtitle="Resumo rápido da operação e Próximos atendimentos."
         activePath="/barber/dashboard"
         statusLabel={barbershopStatus}
       >
@@ -346,7 +346,7 @@ export default function BarberDashboardPage() {
   return (
     <BarberShell
       title={`Dashboard ${userName ? `- ${userName}` : "do barbeiro"}`}
-      subtitle="Confirme agendamentos pendentes e acompanhe os proximos atendimentos."
+      subtitle="Confirme agendamentos pendentes e acompanhe os Próximos atendimentos."
       activePath="/barber/dashboard"
       statusLabel={barbershopStatus}
     >
@@ -368,7 +368,7 @@ export default function BarberDashboardPage() {
 
       <section className="mt-6 rounded-2xl border border-white/12 bg-[#0b1330]/82 p-4">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">Pendentes para confirmacao</h2>
+          <h2 className="text-lg font-semibold">Pendentes para Confirmação</h2>
           <UIButton
             type="button"
             variant="secondary"
@@ -404,7 +404,7 @@ export default function BarberDashboardPage() {
                     Data/hora: <span className="font-semibold">{formatDateTime(item.startAt)}</span>
                   </p>
                   <p className="text-sm text-[#d2daf3]">
-                    Duracao/valor: {item.service.durationMinutes} min - {formatCurrency(item.service.priceCents)}
+                    duração/valor: {item.service.durationMinutes} min - {formatCurrency(item.service.priceCents)}
                   </p>
 
                   <SwipeConfirm
@@ -436,7 +436,7 @@ export default function BarberDashboardPage() {
 
       <section className="mt-6 rounded-2xl border border-white/12 bg-[#0b1330]/82 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">Proximos atendimentos</h2>
+          <h2 className="text-lg font-semibold">Próximos atendimentos</h2>
           <UIButton href="/barber/agenda" variant="secondary" className="!w-auto !px-4 !py-1.5 !text-sm">
             Ver Agenda
           </UIButton>
@@ -458,7 +458,7 @@ export default function BarberDashboardPage() {
             ))
           ) : (
             <p className="rounded-xl border border-white/10 bg-[#0a122f]/70 p-4 text-sm text-[#c6d1ef]">
-              Nenhum agendamento proximo no momento.
+              Nenhum agendamento Próximo no momento.
             </p>
           )}
         </div>

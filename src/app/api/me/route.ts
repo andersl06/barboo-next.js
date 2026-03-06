@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client"
+﻿import { Prisma } from "@prisma/client"
 import { requireAuth } from "@/lib/auth/require-auth"
 import { prisma } from "@/lib/db/prisma"
 import { AUTH_ERRORS } from "@/lib/errors/auth-errors"
@@ -35,7 +35,7 @@ export async function PATCH(req: Request) {
     if (!parsed.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de validacao",
+        "Erro de Validação",
         400,
         parsed.error.issues.map((issue) => ({
           field:

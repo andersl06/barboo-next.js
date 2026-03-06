@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react"
 import { OwnerGate } from "@/components/owner/OwnerGate"
@@ -83,7 +83,7 @@ export default function OwnerCategoriesPage() {
         )
       )
     } catch {
-      setError("Falha de conexao ao carregar categorias.")
+      setError("Falha de conexão ao carregar categorias.")
     } finally {
       setLoading(false)
     }
@@ -125,7 +125,7 @@ export default function OwnerCategoriesPage() {
       setInfo("Categoria criada com sucesso.")
       await loadCategories()
     } catch {
-      setError("Falha de conexao ao criar categoria.")
+      setError("Falha de conexão ao criar categoria.")
     } finally {
       setCreating(false)
     }
@@ -162,7 +162,7 @@ export default function OwnerCategoriesPage() {
       setInfo("Categoria atualizada com sucesso.")
       await loadCategories()
     } catch {
-      setError("Falha de conexao ao atualizar categoria.")
+      setError("Falha de conexão ao atualizar categoria.")
     } finally {
       setSavingId(null)
     }
@@ -172,7 +172,7 @@ export default function OwnerCategoriesPage() {
     return (
       <OwnerShell
         title="Categorias"
-        subtitle="Organize o catalogo com grupos de servicos."
+        subtitle="Organize o catalogo com grupos de Serviços."
         activePath="/owner/categories"
         statusLabel={barbershopStatus}
       >
@@ -213,7 +213,7 @@ export default function OwnerCategoriesPage() {
             />
           </label>
           <label className="space-y-1">
-            <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Descricao</span>
+            <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Descrição</span>
             <input
               className="w-full rounded-xl border border-white/15 bg-[#090f26]/80 px-3 py-2.5 text-[#f1f2f7] outline-none focus:border-[#3f77f5]"
               value={newDescription}
@@ -263,7 +263,7 @@ export default function OwnerCategoriesPage() {
                       />
                     </label>
                     <label className="space-y-1">
-                      <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Descricao</span>
+                      <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Descrição</span>
                       <input
                         className="w-full rounded-xl border border-white/15 bg-[#090f26]/80 px-3 py-2.5 text-[#f1f2f7] outline-none focus:border-[#3f77f5]"
                         value={draft.description}

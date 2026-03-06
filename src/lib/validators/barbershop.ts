@@ -1,4 +1,4 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 import { BARBERSHOP_ERRORS } from "../errors/barbershop-errors";
 import { SCHEDULE_ERRORS } from "../errors/schedule-errors";
 

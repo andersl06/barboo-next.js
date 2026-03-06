@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db/prisma"
+﻿import { prisma } from "@/lib/db/prisma"
 import { markPastConfirmedAppointmentsAsCompleted } from "@/lib/finance/appointments"
 import { requireOwnerFinanceContext } from "@/lib/finance/owner-context"
 import { getWeeklyPeriod, refreshBarbershopFinancialState, resolveInvoiceStatusTotals } from "@/lib/finance/invoices"

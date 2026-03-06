@@ -1,4 +1,4 @@
-import { requireAuth } from "@/lib/auth/require-auth"
+﻿import { requireAuth } from "@/lib/auth/require-auth"
 import { getBarbershopPublishReadiness } from "@/lib/barbershop/publish-readiness"
 import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"
 import { prisma } from "@/lib/db/prisma"
@@ -36,7 +36,7 @@ export async function GET(
 
     const readiness = await getBarbershopPublishReadiness(barbershopId)
     if (!readiness) {
-      return failure("BARBERSHOP_NOT_FOUND", "Barbearia nao encontrada", 404)
+      return failure("BARBERSHOP_NOT_FOUND", "Barbearia não encontrada", 404)
     }
 
     return success(readiness)
@@ -75,13 +75,13 @@ export async function POST(
 
     const readiness = await getBarbershopPublishReadiness(barbershopId)
     if (!readiness) {
-      return failure("BARBERSHOP_NOT_FOUND", "Barbearia nao encontrada", 404)
+      return failure("BARBERSHOP_NOT_FOUND", "Barbearia não encontrada", 404)
     }
 
     if (!readiness.ready) {
       return failure(
         "BARBERSHOP_NOT_READY",
-        "Barbearia ainda nao esta pronta para publicacao.",
+        "Barbearia ainda não está pronta para Publicação.",
         422,
         readiness.missing
       )

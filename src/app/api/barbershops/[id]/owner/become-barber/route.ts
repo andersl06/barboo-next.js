@@ -1,4 +1,4 @@
-import { requireAuth } from "@/lib/auth/require-auth"
+﻿import { requireAuth } from "@/lib/auth/require-auth"
 import { ensureOwnerBarberProfile } from "@/lib/barbershop/ensureOwnerBarberProfile"
 import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"
 import { failure, success } from "@/lib/http/api-response"

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
@@ -60,7 +60,7 @@ function resolveErrorMessage(result: ApiFailure) {
 }
 
 function getLocationLabel(origin: NearbyData["origin"] | null, items: NearbyItem[]) {
-  if (!origin) return "Localizacao nao definida"
+  if (!origin) return "Localização não definida"
 
   const nearest = items[0]
   if (nearest?.city) {
@@ -68,10 +68,10 @@ function getLocationLabel(origin: NearbyData["origin"] | null, items: NearbyItem
   }
 
   if (nearest) {
-    return `${nearest.distanceKm.toFixed(1)} km da barbearia mais proxima`
+    return `${nearest.distanceKm.toFixed(1)} km da barbearia mais próxima`
   }
 
-  return `Localizacao salva • raio ${origin.radiusKm} km`
+  return `Localização salva • raio ${origin.radiusKm} km`
 }
 
 function CardSkeleton() {
@@ -166,7 +166,7 @@ export default function BarbeariasProximasPage() {
       setOrigin(result.data.origin)
       setScreen(result.data.items.length > 0 ? "ready" : "empty")
     } catch {
-      setError("Falha de conexao ao buscar barbearias proximas.")
+      setError("Falha de conexão ao buscar barbearias Próximas.")
       setScreen("empty")
     } finally {
       setRefreshing(false)
@@ -241,7 +241,7 @@ export default function BarbeariasProximasPage() {
         )
       )
     } catch {
-      setError("Falha de conexao ao atualizar favoritos.")
+      setError("Falha de conexão ao atualizar favoritos.")
     } finally {
       setFavoriteLoading((prev) => ({ ...prev, [item.id]: false }))
     }
@@ -272,7 +272,7 @@ export default function BarbeariasProximasPage() {
       <main className="relative min-h-[100svh] overflow-hidden bg-[#070B16] px-4 py-8 text-[#f1f2f7] md:px-8 md:py-12">
         <PremiumBackground />
         <section className="relative z-10 mx-auto max-w-3xl rounded-3xl border border-white/10 bg-[#0d1434]/80 p-6 text-center">
-          <p className="text-[#d0d7ef]">Voce precisa fazer login para buscar barbearias.</p>
+          <p className="text-[#d0d7ef]">Você precisa fazer login para buscar barbearias.</p>
           <Link className="mt-4 inline-flex rounded-lg border border-white/15 px-4 py-2" href="/login">
             Ir para login
           </Link>
@@ -286,9 +286,9 @@ export default function BarbeariasProximasPage() {
       <PremiumBackground />
       <section className="relative z-10 mx-auto w-full max-w-6xl rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(20,24,54,0.9)_0%,rgba(13,17,41,0.94)_100%)] p-5 shadow-[0_30px_80px_rgba(0,0,0,0.6)] md:p-6">
         <header className="sticky top-3 z-20 rounded-2xl border border-white/10 bg-[#0e1738]/95 p-4 backdrop-blur">
-          <h1 className="text-3xl font-bold">Barbearias proximas</h1>
+          <h1 className="text-3xl font-bold">Barbearias Próximas</h1>
           <p className="mt-1 text-sm text-[#a7b1d0] md:text-base">
-            Encontre a melhor opcao perto de voce.
+            Encontre a melhor Opção perto de Você.
           </p>
 
           <div className="mt-4 grid gap-2 md:grid-cols-[1fr_auto] md:items-center">
@@ -329,16 +329,16 @@ export default function BarbeariasProximasPage() {
 
         {screen === "empty" || filteredItems.length === 0 ? (
           <div className="mt-6 rounded-2xl border border-white/12 bg-[#0b1330]/80 p-5">
-            <p className="text-base font-semibold text-[#dbe4ff]">Nao encontramos barbearias proximas</p>
+            <p className="text-base font-semibold text-[#dbe4ff]">Não encontramos barbearias Próximas</p>
             <p className="mt-1 text-sm text-[#b7c3e7]">
-              Ajuste sua localizacao ou tente uma busca manual.
+              Ajuste Sua localização ou tente uma busca manual.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <UIButton
                 href="/cliente/localizacao?next=%2Fcliente%2Fbarbearias-proximas"
                 className="!w-auto !px-4 !py-2 !text-sm"
               >
-                Atualizar localizacao
+                Atualizar Localização
               </UIButton>
               <button
                 type="button"
@@ -391,7 +391,7 @@ export default function BarbeariasProximasPage() {
                       <div className="min-w-0">
                         <h2 className="truncate text-lg font-semibold">{item.name}</h2>
                         <p className="truncate text-xs text-[#a7b1d0]">
-                          {[item.neighborhood, item.city].filter(Boolean).join(" - ") || "Local nao informado"}
+                          {[item.neighborhood, item.city].filter(Boolean).join(" - ") || "Local não informado"}
                         </p>
                       </div>
                       <span className="rounded-full border border-[#6aa3ff]/35 bg-[#6aa3ff]/15 px-2 py-0.5 text-xs font-semibold text-[#cfe0ff]">
@@ -405,13 +405,13 @@ export default function BarbeariasProximasPage() {
                           {item.rating.toFixed(1)} ({item.ratingCount})
                         </span>
                       ) : (
-                        <span className="rounded-full border border-white/15 px-2 py-0.5 text-[#9eabd4]">Sem avaliacoes</span>
+                        <span className="rounded-full border border-white/15 px-2 py-0.5 text-[#9eabd4]">Sem Avaliações</span>
                       )}
 
                       {item.avgPrice !== null ? (
-                        <span>Preco medio R$ {item.avgPrice.toFixed(2)}</span>
+                        <span>preço medio R$ {item.avgPrice.toFixed(2)}</span>
                       ) : (
-                        <span className="text-[#9eabd4]">Preco medio indisponivel</span>
+                        <span className="text-[#9eabd4]">preço medio indisponivel</span>
                       )}
                     </div>
 

@@ -1,4 +1,4 @@
-import { requireAuth } from "@/lib/auth/require-auth"
+﻿import { requireAuth } from "@/lib/auth/require-auth"
 import { prisma } from "@/lib/db/prisma"
 import { success, failure } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"

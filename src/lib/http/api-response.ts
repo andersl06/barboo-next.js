@@ -1,4 +1,4 @@
-// src/lib/http/api-response.ts
+﻿// src/lib/http/api-response.ts
 import { NextResponse } from "next/server"
 
 export type ApiErrorDetail = {

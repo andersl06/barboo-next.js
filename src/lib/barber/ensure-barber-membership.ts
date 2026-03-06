@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db/prisma"
+﻿import { prisma } from "@/lib/db/prisma"
 
 export async function ensureBarberMembership(barbershopId: string, barberUserId: string) {
   const membership = await prisma.barbershopMembership.findUnique({

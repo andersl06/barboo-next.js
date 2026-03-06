@@ -1,4 +1,4 @@
-import { ACCESS_TOKEN_COOKIE, readCookie } from "@/lib/auth/session-cookies"
+﻿import { ACCESS_TOKEN_COOKIE, readCookie } from "@/lib/auth/session-cookies"
 import { prisma } from "@/lib/db/prisma"
 import { JwtPayload, verifyToken } from "@/lib/security/jwt"
 
@@ -62,7 +62,7 @@ function resolvePayload(req: Request): JwtPayload | null {
 export async function requireAuth(req: Request): Promise<AuthResult> {
   const payload = resolvePayload(req)
   if (!payload) {
-    return { error: true, status: 401, message: "Nao autenticado" }
+    return { error: true, status: 401, message: "Não autenticado" }
   }
 
   const user = await prisma.user.findUnique({
@@ -83,11 +83,11 @@ export async function requireAuth(req: Request): Promise<AuthResult> {
   })
 
   if (!user) {
-    return { error: true, status: 401, message: "Usuario nao encontrado" }
+    return { error: true, status: 401, message: "Usuário não encontrado" }
   }
 
   if (user.status !== "ACTIVE") {
-    return { error: true, status: 403, message: "Usuario suspenso" }
+    return { error: true, status: 403, message: "Usuário suspenso" }
   }
 
   if (user.mustChangePassword) {

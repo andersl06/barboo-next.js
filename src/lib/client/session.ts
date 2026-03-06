@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 const LEGACY_ACCESS_TOKEN_KEY = "barboo.accessToken"
 const LEGACY_TEMP_TOKEN_KEY = "barboo.tempToken"

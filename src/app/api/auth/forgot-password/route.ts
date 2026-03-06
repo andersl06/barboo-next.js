@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server"
+﻿import { NextRequest } from "next/server"
 import { createPasswordResetToken, getPasswordResetExpiryDate } from "@/lib/auth/password-reset"
 import { prisma } from "@/lib/db/prisma"
 import { sendPasswordResetEmail } from "@/lib/email"
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de validacao",
+        "Erro de Validação",
         400,
         parsed.error.issues.map((issue) => ({
           field:

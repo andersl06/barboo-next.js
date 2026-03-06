@@ -276,6 +276,41 @@ npx prisma migrate deploy
 
 4. Redeploy na Vercel e teste o fluxo completo.
 
+### Deploy quando houver alteracoes no banco (Prisma)
+
+Se voce alterou `schema.prisma`, **nao use `db push` em producao**. O fluxo correto e:
+
+1. Localmente, criar migration:
+
+```bash
+npx prisma migrate dev --name nome_da_mudanca
+```
+
+2. Subir o codigo com a pasta `prisma/migrations` versionada no Git.
+3. No ambiente de deploy (ou CI), aplicar migrations pendentes:
+
+```bash
+npx prisma migrate deploy
+```
+
+4. Gerar o client Prisma:
+
+```bash
+npx prisma generate
+```
+
+5. Fazer o build da aplicacao:
+
+```bash
+npm run build
+```
+
+Exemplo de comando unico para pipeline/servidor:
+
+```bash
+npx prisma migrate deploy && npx prisma generate && npm run build
+```
+
 ## Cobranca semanal via AbacatePay (PIX)
 
 Fluxo implementado para OWNER em `/owner/finance`:

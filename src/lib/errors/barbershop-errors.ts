@@ -1,4 +1,4 @@
-// src/lib/errors/barbershop-errors.ts
+﻿// src/lib/errors/barbershop-errors.ts
 
 export type BarbershopField =
   | "name"

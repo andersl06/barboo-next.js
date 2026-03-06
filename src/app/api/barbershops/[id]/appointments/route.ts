@@ -1,4 +1,4 @@
-import {
+﻿import {
   buildAvailableSlots,
   getBusinessDateBounds,
   getBusinessDateFromDate,
@@ -49,7 +49,7 @@ export async function POST(
     if (!parsed.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de validacao",
+        "Erro de Validação",
         400,
         parsed.error.issues.map((issue) => ({
           field:
@@ -127,13 +127,13 @@ export async function POST(
     }
 
     if (!barbershop) {
-      return failure("BARBERSHOP_NOT_FOUND", "Barbearia nao encontrada.", 404)
+      return failure("BARBERSHOP_NOT_FOUND", "Barbearia não encontrada.", 404)
     }
 
     if (barbershop.financialStatus === "BLOCKED") {
       return failure(
         "BARBERSHOP_FINANCIAL_BLOCKED",
-        barbershop.blockedReason ?? "Barbearia bloqueada por pendencia financeira.",
+        barbershop.blockedReason ?? "Barbearia bloqueada por Pendência financeira.",
         403
       )
     }

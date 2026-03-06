@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken"
+﻿import jwt from "jsonwebtoken"
 
 function getJwtSecret() {
   const jwtSecret = process.env.JWT_SECRET

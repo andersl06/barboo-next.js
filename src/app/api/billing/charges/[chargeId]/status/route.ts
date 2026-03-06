@@ -1,4 +1,4 @@
-import { z } from "zod"
+﻿import { z } from "zod"
 import { ChargeStatus } from "@/lib/billing/types"
 import { prisma } from "@/lib/db/prisma"
 import { refreshBarbershopFinancialState } from "@/lib/finance/invoices"
@@ -8,7 +8,7 @@ import { failure, success } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
 
 const paramsSchema = z.object({
-  chargeId: z.string().min(1, "chargeId invalido."),
+  chargeId: z.string().min(1, "chargeId inválido."),
 })
 
 function mapInvoiceStatusByCharge(chargeStatus: ChargeStatus, invoiceStatus: "OPEN" | "PAID" | "OVERDUE" | "VOID") {
@@ -31,7 +31,7 @@ export async function GET(
     if (!parsedParams.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de validacao",
+        "Erro de Validação",
         400,
         parsedParams.error.issues.map((issue) => ({
           field:
@@ -59,7 +59,7 @@ export async function GET(
     })
 
     if (!invoice) {
-      return failure("NOT_FOUND", "Cobranca nao encontrada para esta barbearia.", 404)
+      return failure("NOT_FOUND", "Cobrança não encontrada para esta barbearia.", 404)
     }
 
     if (invoice.status === "PAID") {
@@ -163,7 +163,7 @@ export async function GET(
           message: err.message,
         })
 
-        return failure("ABACATEPAY_ERROR", "Falha ao consultar status da cobranca PIX.", 502)
+        return failure("ABACATEPAY_ERROR", "Falha ao consultar status da Cobrança PIX.", 502)
       }
 
       throw err

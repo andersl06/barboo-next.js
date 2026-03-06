@@ -1,4 +1,4 @@
-export function getClientIp(req: Request) {
+﻿export function getClientIp(req: Request) {
   const forwarded = req.headers.get("x-forwarded-for")
   if (forwarded) {
     const first = forwarded.split(",")[0]?.trim()

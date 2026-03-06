@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db/prisma"
+﻿import { prisma } from "@/lib/db/prisma"
 import { failure, success } from "@/lib/http/api-response"
 import { getClientIp } from "@/lib/http/client-ip"
 import { handleError } from "@/lib/http/error-handler"
@@ -11,7 +11,7 @@ export async function GET(
   try {
     const { slug } = await params
     if (!slug || slug.trim().length === 0) {
-      return failure("BAD_REQUEST", "Slug da barbearia e obrigatorio.", 400)
+      return failure("BAD_REQUEST", "Slug da barbearia é obrigatório.", 400)
     }
 
     const ip = getClientIp(req)
@@ -104,7 +104,7 @@ export async function GET(
     })
 
     if (!barbershop || barbershop.status !== "ATIVA") {
-      return failure("BARBERSHOP_NOT_FOUND", "Barbearia nao encontrada.", 404)
+      return failure("BARBERSHOP_NOT_FOUND", "Barbearia não encontrada.", 404)
     }
 
     return success({

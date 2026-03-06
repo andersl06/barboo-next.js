@@ -1,4 +1,4 @@
-import { requireAuth } from "@/lib/auth/require-auth"
+﻿import { requireAuth } from "@/lib/auth/require-auth"
 import { ensureBarberMembership } from "@/lib/barber/ensure-barber-membership"
 import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"
 import { prisma } from "@/lib/db/prisma"
@@ -35,7 +35,7 @@ export async function PATCH(
 
     const targetMembership = await ensureBarberMembership(barbershopId, barberUserId)
     if (!targetMembership) {
-      return failure("NOT_FOUND", "Barbeiro nao encontrado na barbearia", 404)
+      return failure("NOT_FOUND", "Barbeiro não encontrado na barbearia", 404)
     }
 
     const body = await req.json()
@@ -43,7 +43,7 @@ export async function PATCH(
     if (!parsed.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de validacao",
+        "Erro de Validação",
         400,
         parsed.error.issues.map((issue) => ({
           field:

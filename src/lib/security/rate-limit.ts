@@ -1,4 +1,4 @@
-const requests = new Map<
+﻿const requests = new Map<
   string,
   { count: number; last: number; blockedUntil?: number }
 >()

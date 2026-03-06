@@ -1,4 +1,4 @@
-type SendPasswordResetEmailInput = {
+﻿type SendPasswordResetEmailInput = {
   to: string
   resetUrl: string
   recipientName?: string | null
@@ -34,9 +34,9 @@ function buildPasswordResetHtml({
       <p style="margin:0 0 16px;color:#c8d2f2;font-size:14px;line-height:1.6;">Ola, ${safeName}. Recebemos uma solicitacao para redefinir sua senha.</p>
       <p style="margin:0 0 20px;color:#aeb8db;font-size:14px;line-height:1.6;">Clique no botao abaixo para criar uma nova senha. Esse link expira em breve por seguranca.</p>
       <a href="${safeUrl}" style="display:inline-block;background:linear-gradient(180deg,#f36c20 0%,#cb4518 100%);color:#fff;text-decoration:none;font-weight:700;border-radius:10px;padding:12px 20px;">Redefinir senha</a>
-      <p style="margin:20px 0 8px;color:#9eabd4;font-size:12px;line-height:1.6;">Se o botao nao funcionar, copie e cole este link no navegador:</p>
+      <p style="margin:20px 0 8px;color:#9eabd4;font-size:12px;line-height:1.6;">Se o botao não funcionar, copie e cole este link no navegador:</p>
       <p style="margin:0;color:#d8e3ff;font-size:12px;word-break:break-all;">${safeUrl}</p>
-      <p style="margin:20px 0 0;color:#7f8dbd;font-size:12px;line-height:1.6;">Se voce nao solicitou esta alteracao, ignore este e-mail.</p>
+      <p style="margin:20px 0 0;color:#7f8dbd;font-size:12px;line-height:1.6;">Se Você não solicitou esta alteracao, ignore este e-mail.</p>
     </div>
   </div>`
 }
@@ -50,7 +50,7 @@ Acesse o link abaixo para criar uma nova senha:
 
 ${resetUrl}
 
-Se voce nao solicitou esta alteracao, ignore este e-mail.`
+Se Você não solicitou esta alteracao, ignore este e-mail.`
 }
 
 async function sendWithResend({

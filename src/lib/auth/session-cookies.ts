@@ -1,4 +1,4 @@
-import type { NextResponse } from "next/server"
+﻿import type { NextResponse } from "next/server"
 
 export const ACCESS_TOKEN_COOKIE = "barboo_access_token"
 export const TEMP_TOKEN_COOKIE = "barboo_temp_token"

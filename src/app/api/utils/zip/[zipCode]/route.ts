@@ -1,4 +1,4 @@
-import { BARBERSHOP_ERRORS } from "@/lib/errors/barbershop-errors"
+﻿import { BARBERSHOP_ERRORS } from "@/lib/errors/barbershop-errors"
 import { failure, success } from "@/lib/http/api-response"
 import { getClientIp } from "@/lib/http/client-ip"
 import { handleError } from "@/lib/http/error-handler"

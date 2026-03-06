@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { FormEvent, useCallback, useEffect, useState } from "react"
 import { OwnerGate } from "@/components/owner/OwnerGate"
@@ -161,7 +161,7 @@ export default function OwnerBarbershopEditPage() {
         cnpj: formatCnpj(result.data.cnpj ?? ""),
       })
     } catch {
-      setError("Falha de conexao ao carregar dados da barbearia.")
+      setError("Falha de conexão ao carregar dados da barbearia.")
     } finally {
       setLoadingData(false)
     }
@@ -232,10 +232,10 @@ export default function OwnerBarbershopEditPage() {
         return
       }
 
-      setInfo("Informacoes da barbearia atualizadas com sucesso.")
+      setInfo("informações da barbearia atualizadas com sucesso.")
       await loadData()
     } catch {
-      setError("Falha de conexao ao salvar dados da barbearia.")
+      setError("Falha de conexão ao salvar dados da barbearia.")
     } finally {
       setSaving(false)
     }
@@ -283,7 +283,7 @@ export default function OwnerBarbershopEditPage() {
       }
       await loadData()
     } catch {
-      setError(`Falha de conexao ao enviar ${kind === "logo" ? "logo" : "capa"}.`)
+      setError(`Falha de conexão ao enviar ${kind === "logo" ? "logo" : "capa"}.`)
     } finally {
       if (kind === "logo") {
         setUploadingLogo(false)
@@ -309,7 +309,7 @@ export default function OwnerBarbershopEditPage() {
   return (
     <OwnerShell
       title="Editar barbearia"
-      subtitle="Dados operacionais, endereco, slug e identidade visual."
+      subtitle="Dados operacionais, Endereço, slug e identidade visual."
       activePath="/owner/barbershop/edit"
       statusLabel={shop?.status ?? barbershopStatus}
     >
@@ -337,7 +337,7 @@ export default function OwnerBarbershopEditPage() {
               />
             ) : (
               <div className="flex h-28 items-center justify-center rounded-lg bg-[#0b1330] text-xs text-[#9fb1e2]">
-                Logo nao configurado
+                Logo não configurado
               </div>
             )}
           </div>
@@ -369,7 +369,7 @@ export default function OwnerBarbershopEditPage() {
               />
             ) : (
               <div className="flex h-28 items-center justify-center rounded-lg bg-[#0b1330] text-xs text-[#9fb1e2]">
-                Capa nao configurada
+                Capa não configurada
               </div>
             )}
           </div>
@@ -417,7 +417,7 @@ export default function OwnerBarbershopEditPage() {
         </div>
 
         <label className="space-y-1">
-          <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Descricao</span>
+          <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Descrição</span>
           <textarea
             className="min-h-[110px] w-full rounded-xl border border-white/15 bg-[#090f26]/80 px-3 py-2.5 text-[#f1f2f7] outline-none focus:border-[#3f77f5]"
             value={form.description}
@@ -428,7 +428,7 @@ export default function OwnerBarbershopEditPage() {
 
         <div className="grid gap-4 md:grid-cols-3">
           <label className="space-y-1 md:col-span-2">
-            <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Endereco</span>
+            <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Endereço</span>
             <input
               className="w-full rounded-xl border border-white/15 bg-[#090f26]/80 px-3 py-2.5 text-[#f1f2f7] outline-none focus:border-[#3f77f5]"
               value={form.address}

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { UIButton } from "@/components/ui/UIButton"
@@ -14,7 +14,7 @@ export function OwnerGate({ state, error }: OwnerGateProps) {
   if (state === "loading") {
     return (
       <section className="rounded-2xl border border-white/12 bg-[#0b1330]/80 p-5 text-center">
-        <p className="text-[#d0d7ef]">Carregando ambiente do proprietario...</p>
+        <p className="text-[#d0d7ef]">Carregando ambiente do proprietário...</p>
       </section>
     )
   }
@@ -22,7 +22,7 @@ export function OwnerGate({ state, error }: OwnerGateProps) {
   if (state === "unauthenticated") {
     return (
       <section className="rounded-2xl border border-white/12 bg-[#0b1330]/80 p-5 text-center">
-        <p className="text-[#d0d7ef]">Voce precisa fazer login para acessar essa area.</p>
+        <p className="text-[#d0d7ef]">Você precisa fazer login para acessar essa area.</p>
         {error ? <p className="mt-2 text-sm text-red-200">{error}</p> : null}
         <div className="mt-4">
           <UIButton href="/login?next=%2Fowner%2Fdashboard">Ir para login</UIButton>
@@ -33,7 +33,7 @@ export function OwnerGate({ state, error }: OwnerGateProps) {
 
   return (
     <section className="rounded-2xl border border-white/12 bg-[#0b1330]/80 p-5 text-center">
-      <p className="text-[#d0d7ef]">Nenhuma barbearia encontrada para este proprietario.</p>
+      <p className="text-[#d0d7ef]">Nenhuma barbearia encontrada para este proprietário.</p>
       {error ? <p className="mt-2 text-sm text-red-200">{error}</p> : null}
       <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
         <UIButton href="/onboarding/proprietario">Iniciar onboarding</UIButton>

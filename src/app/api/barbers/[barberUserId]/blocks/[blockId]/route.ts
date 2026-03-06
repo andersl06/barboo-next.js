@@ -1,4 +1,4 @@
-import { canManageBlocks } from "@/lib/barber/can-manage-blocks"
+﻿import { canManageBlocks } from "@/lib/barber/can-manage-blocks"
 import { requireAuth } from "@/lib/auth/require-auth"
 import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"
 import { prisma } from "@/lib/db/prisma"
@@ -16,7 +16,7 @@ export async function DELETE(
     const barbershopId = new URL(req.url).searchParams.get("barbershopId")
 
     if (!barbershopId) {
-      return failure("BAD_REQUEST", "barbershopId e obrigatorio", 400)
+      return failure("BAD_REQUEST", "barbershopId é obrigatório", 400)
     }
 
     const auth = await requireAuth(req)

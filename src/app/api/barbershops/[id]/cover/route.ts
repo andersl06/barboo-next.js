@@ -1,4 +1,4 @@
-import { requireAuth } from "@/lib/auth/require-auth"
+﻿import { requireAuth } from "@/lib/auth/require-auth"
 import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"
 import { uploadBarbershopImage } from "@/lib/barbershop/upload-barbershop-image"
 import { prisma } from "@/lib/db/prisma"

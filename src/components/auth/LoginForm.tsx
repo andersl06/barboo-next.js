@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -72,10 +72,10 @@ function translateLoginError(result: Extract<ApiResult<LoginResponseData>, { suc
   }
 
   if (result.code === "UNAUTHORIZED") {
-    return "Sessao invalida. Faca login novamente."
+    return "Sessão inválida. Faça login novamente."
   }
 
-  return "Nao foi possivel concluir o login agora."
+  return "Não foi possível concluir o login agora."
 }
 
 function MailIcon() {
@@ -192,7 +192,7 @@ export function LoginForm({ registered = false, reset = false, nextPath }: Login
 
       router.push(explicitNextPath)
     } catch {
-      setError("Falha de conexao. Tente novamente.")
+      setError("Falha de conexão. Tente novamente.")
     } finally {
       setLoading(false)
     }
@@ -259,7 +259,7 @@ export function LoginForm({ registered = false, reset = false, nextPath }: Login
 
       <div className="mt-2 flex items-center gap-3 text-sm text-[#aeb8db]">
         <span className="h-px flex-1 bg-white/20" />
-        <span>Nao tem uma conta?</span>
+        <span>Não tem uma conta?</span>
         <Link className="font-semibold text-[#dbe4ff] hover:text-white" href="/cadastro">
           Cadastre-se
         </Link>

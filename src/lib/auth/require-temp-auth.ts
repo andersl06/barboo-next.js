@@ -1,4 +1,4 @@
-import { TEMP_TOKEN_COOKIE, readCookie } from "@/lib/auth/session-cookies"
+﻿import { TEMP_TOKEN_COOKIE, readCookie } from "@/lib/auth/session-cookies"
 import { prisma } from "@/lib/db/prisma"
 import { verifyToken } from "@/lib/security/jwt"
 
@@ -50,7 +50,7 @@ function resolveTempUserId(req: Request) {
 export async function requireTempAuth(req: Request): Promise<TempAuthResult> {
   const userId = resolveTempUserId(req)
   if (!userId) {
-    return { error: true, status: 401, message: "Nao autenticado" }
+    return { error: true, status: 401, message: "Não autenticado" }
   }
 
   const user = await prisma.user.findUnique({
@@ -59,15 +59,15 @@ export async function requireTempAuth(req: Request): Promise<TempAuthResult> {
   })
 
   if (!user) {
-    return { error: true, status: 401, message: "Usuario nao encontrado" }
+    return { error: true, status: 401, message: "Usuário não encontrado" }
   }
 
   if (user.status !== "ACTIVE") {
-    return { error: true, status: 403, message: "Usuario suspenso" }
+    return { error: true, status: 403, message: "Usuário suspenso" }
   }
 
   if (!user.mustChangePassword) {
-    return { error: true, status: 403, message: "Troca de senha nao e necessaria" }
+    return { error: true, status: 403, message: "Troca de senha não e necessária" }
   }
 
   return { userId: user.id }

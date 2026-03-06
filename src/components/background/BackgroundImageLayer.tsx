@@ -1,4 +1,4 @@
-type BackgroundImageLayerProps = {
+﻿type BackgroundImageLayerProps = {
   mobileSrc: string;
   desktopSrc: string;
   className?: string;

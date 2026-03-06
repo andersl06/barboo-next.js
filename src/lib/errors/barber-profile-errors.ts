@@ -1,4 +1,4 @@
-export const BARBER_PROFILE_ERRORS = {
+﻿export const BARBER_PROFILE_ERRORS = {
   BIO_MAX: {
     code: "VALIDATION_ERROR" as const,
     message: "Bio deve ter no máximo 500 caracteres.",

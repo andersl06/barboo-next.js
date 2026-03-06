@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import Image from "next/image"
 import Link from "next/link"
@@ -191,7 +191,7 @@ export default function OnboardingProprietarioPage() {
     const token = getAccessToken()
     if (!token) {
       setScreen("unauthenticated")
-      setGlobalError("Sua sessao expirou. Faca login novamente.")
+      setGlobalError("Sua sessão expirou. Faça login novamente.")
       return null
     }
 
@@ -213,7 +213,7 @@ export default function OnboardingProprietarioPage() {
       context = await fetchMeContext(token)
     } catch {
       setScreen("forbidden")
-      setGlobalError("Nao foi possivel validar sua sessao agora.")
+      setGlobalError("Não foi possível validar Sua sessão agora.")
       return
     }
 
@@ -258,7 +258,7 @@ export default function OnboardingProprietarioPage() {
 
       setReadiness(result.data)
     } catch {
-      setGlobalError("Falha de conexao ao atualizar checklist.")
+      setGlobalError("Falha de conexão ao atualizar checklist.")
     } finally {
       setIsRefreshingReadiness(false)
     }
@@ -288,7 +288,7 @@ export default function OnboardingProprietarioPage() {
         setServices(servicesResult.data)
       }
     } catch {
-      setGlobalError("Falha ao atualizar categorias e servicos.")
+      setGlobalError("Falha ao atualizar categorias e Serviços.")
     }
   }
 
@@ -316,13 +316,13 @@ export default function OnboardingProprietarioPage() {
       }>
 
       if (!result.success) {
-        setGlobalError(resolveApiError(result, "Nao foi possivel ativar intencao de owner."))
+        setGlobalError(resolveApiError(result, "Não foi possível ativar intenção de owner."))
         return
       }
 
       await bootstrap()
     } catch {
-      setGlobalError("Falha de conexao. Tente novamente.")
+      setGlobalError("Falha de conexão. Tente novamente.")
     }
   }
 
@@ -367,7 +367,7 @@ export default function OnboardingProprietarioPage() {
       }>
 
       if (!result.success) {
-        setGlobalError(resolveApiError(result, "Nao foi possivel criar a barbearia."))
+        setGlobalError(resolveApiError(result, "Não foi possível criar a barbearia."))
         return
       }
 
@@ -376,7 +376,7 @@ export default function OnboardingProprietarioPage() {
       setGlobalInfo("Barbearia criada. Continue os passos para publicar.")
       await Promise.all([refreshReadiness(result.data.id, token), refreshCatalog(result.data.id)])
     } catch {
-      setGlobalError("Falha de conexao ao criar barbearia.")
+      setGlobalError("Falha de conexão ao criar barbearia.")
     } finally {
       setIsCreatingBarbershop(false)
     }
@@ -411,14 +411,14 @@ export default function OnboardingProprietarioPage() {
 
       const result = (await response.json()) as ApiResult<{ logoUrl: string }>
       if (!result.success) {
-        setGlobalError(resolveApiError(result, "Nao foi possivel enviar o logo."))
+        setGlobalError(resolveApiError(result, "Não foi possível enviar o logo."))
         return
       }
 
       setGlobalInfo("Logo atualizado com sucesso.")
       await refreshReadiness(barbershopId, token)
     } catch {
-      setGlobalError("Falha de conexao ao enviar logo.")
+      setGlobalError("Falha de conexão ao enviar logo.")
     } finally {
       setIsUploadingLogo(false)
     }
@@ -453,14 +453,14 @@ export default function OnboardingProprietarioPage() {
 
       const result = (await response.json()) as ApiResult<{ coverUrl: string }>
       if (!result.success) {
-        setGlobalError(resolveApiError(result, "Nao foi possivel enviar a capa."))
+        setGlobalError(resolveApiError(result, "Não foi possível enviar a capa."))
         return
       }
 
       setGlobalInfo("Capa atualizada com sucesso.")
       await refreshReadiness(barbershopId, token)
     } catch {
-      setGlobalError("Falha de conexao ao enviar capa.")
+      setGlobalError("Falha de conexão ao enviar capa.")
     } finally {
       setIsUploadingCover(false)
     }
@@ -498,7 +498,7 @@ export default function OnboardingProprietarioPage() {
         }
       }>
       if (!result.success) {
-        setGlobalError(resolveApiError(result, "Nao foi possivel criar barbeiro."))
+        setGlobalError(resolveApiError(result, "Não foi possível criar barbeiro."))
         return
       }
 
@@ -508,7 +508,7 @@ export default function OnboardingProprietarioPage() {
       setGlobalInfo("Barbeiro criado. O avatar podera ser configurado por ele.")
       await refreshReadiness(barbershopId, token)
     } catch {
-      setGlobalError("Falha de conexao ao criar barbeiro.")
+      setGlobalError("Falha de conexão ao criar barbeiro.")
     } finally {
       setIsCreatingBarber(false)
     }
@@ -587,7 +587,7 @@ export default function OnboardingProprietarioPage() {
 
       if (!membershipResult.success) {
         setGlobalError(
-          resolveApiError(membershipResult, "Nao foi possivel habilitar owner como barbeiro.")
+          resolveApiError(membershipResult, "Não foi possível habilitar owner como barbeiro.")
         )
         return
       }
@@ -609,7 +609,7 @@ export default function OnboardingProprietarioPage() {
       }>
 
       if (!profileResult.success) {
-        setGlobalError(resolveApiError(profileResult, "Nao foi possivel salvar bio do barbeiro."))
+        setGlobalError(resolveApiError(profileResult, "Não foi possível salvar bio do barbeiro."))
         return
       }
 
@@ -637,7 +637,7 @@ export default function OnboardingProprietarioPage() {
       setGlobalInfo("Owner configurado como barbeiro com sucesso.")
       await refreshReadiness(barbershopId, token)
     } catch {
-      setGlobalError("Falha de conexao ao salvar perfil do barbeiro.")
+      setGlobalError("Falha de conexão ao salvar perfil do barbeiro.")
     } finally {
       setIsSavingBarberProfile(false)
     }
@@ -669,7 +669,7 @@ export default function OnboardingProprietarioPage() {
 
       const result = (await response.json()) as ApiResult<CategoryItem>
       if (!result.success) {
-        setGlobalError(resolveApiError(result, "Nao foi possivel criar categoria."))
+        setGlobalError(resolveApiError(result, "Não foi possível criar categoria."))
         return
       }
 
@@ -678,7 +678,7 @@ export default function OnboardingProprietarioPage() {
       setGlobalInfo("Categoria criada com sucesso.")
       await Promise.all([refreshCatalog(barbershopId), refreshReadiness(barbershopId, token)])
     } catch {
-      setGlobalError("Falha de conexao ao criar categoria.")
+      setGlobalError("Falha de conexão ao criar categoria.")
     } finally {
       setIsCreatingCategory(false)
     }
@@ -695,12 +695,12 @@ export default function OnboardingProprietarioPage() {
     const priceCents = toPriceCents(servicePrice)
 
     if (!Number.isInteger(duration) || duration < 5) {
-      setGlobalError("Duracao invalida. Use pelo menos 5 minutos.")
+      setGlobalError("duração inválida. Use pelo menos 5 minutos.")
       return
     }
 
     if (priceCents === null) {
-      setGlobalError("Preco invalido. Informe um valor maior que zero.")
+      setGlobalError("preço inválido. Informe um valor maior que zero.")
       return
     }
 
@@ -726,7 +726,7 @@ export default function OnboardingProprietarioPage() {
 
       const result = (await response.json()) as ApiResult<ServiceItem>
       if (!result.success) {
-        setGlobalError(resolveApiError(result, "Nao foi possivel criar servico."))
+        setGlobalError(resolveApiError(result, "Não foi possível criar Serviço."))
         return
       }
 
@@ -735,10 +735,10 @@ export default function OnboardingProprietarioPage() {
       setServicePrice("")
       setServiceDuration("30")
       setServiceCategoryId("")
-      setGlobalInfo("Servico criado com sucesso.")
+      setGlobalInfo("Serviço criado com sucesso.")
       await Promise.all([refreshCatalog(barbershopId), refreshReadiness(barbershopId, token)])
     } catch {
-      setGlobalError("Falha de conexao ao criar servico.")
+      setGlobalError("Falha de conexão ao criar Serviço.")
     } finally {
       setIsCreatingService(false)
     }
@@ -768,14 +768,14 @@ export default function OnboardingProprietarioPage() {
       }>
 
       if (!result.success) {
-        setGlobalError(resolveApiError(result, "Nao foi possivel publicar a barbearia."))
+        setGlobalError(resolveApiError(result, "Não foi possível publicar a barbearia."))
         await refreshReadiness(barbershopId, token)
         return
       }
 
       router.push("/owner/dashboard?published=1")
     } catch {
-      setGlobalError("Falha de conexao ao publicar barbearia.")
+      setGlobalError("Falha de conexão ao publicar barbearia.")
     } finally {
       setIsPublishing(false)
     }
@@ -814,7 +814,7 @@ export default function OnboardingProprietarioPage() {
     return (
       <Wrapper>
         <div className="flex min-h-[40svh] items-center justify-center rounded-3xl border border-white/10 bg-[#0d1434]/75">
-          <p className="text-base text-[#d0d7ef]">Redirecionando para gestao da barbearia...</p>
+          <p className="text-base text-[#d0d7ef]">Redirecionando para gestão da barbearia...</p>
         </div>
       </Wrapper>
     )
@@ -831,9 +831,9 @@ export default function OnboardingProprietarioPage() {
             height={70}
             className="mx-auto h-auto w-[190px]"
           />
-          <h1 className="mt-6 text-2xl font-semibold">Voce precisa entrar</h1>
+          <h1 className="mt-6 text-2xl font-semibold">Você precisa entrar</h1>
           <p className="mt-2 text-sm text-[#a7b1d0]">
-            Faca login para continuar seu onboarding de proprietario.
+            Faça login para continuar seu onboarding de proprietário.
           </p>
           <Link
             className="mt-5 inline-flex rounded-lg border border-white/15 px-4 py-2 text-sm font-medium hover:bg-white/10"
@@ -857,13 +857,13 @@ export default function OnboardingProprietarioPage() {
             height={70}
             className="h-auto w-[190px]"
           />
-          <h1 className="mt-5 text-2xl font-semibold">Ativar fluxo de proprietario</h1>
+          <h1 className="mt-5 text-2xl font-semibold">Ativar fluxo de proprietário</h1>
           <p className="mt-2 text-sm text-[#a7b1d0]">
-            Sua conta ainda nao esta no fluxo de owner. Ative para continuar.
+            Sua conta ainda não está no fluxo de owner. Ative para continuar.
           </p>
           {globalError ? <p className="mt-3 text-sm text-red-300">{globalError}</p> : null}
           <div className="mt-5">
-            <UIButton onClick={handleBecomeOwner}>Ativar onboarding de proprietario</UIButton>
+            <UIButton onClick={handleBecomeOwner}>Ativar onboarding de proprietário</UIButton>
           </div>
         </section>
       </Wrapper>
@@ -923,7 +923,7 @@ export default function OnboardingProprietarioPage() {
             </div>
 
             <label className="space-y-1">
-              <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Descricao</span>
+              <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Descrição</span>
               <textarea
                 className="min-h-[110px] w-full rounded-xl border border-white/15 bg-[#090f26]/80 px-3 py-2.5 text-[#f1f2f7] outline-none focus:border-[#3f77f5]"
                 value={formDescription}
@@ -935,7 +935,7 @@ export default function OnboardingProprietarioPage() {
 
             <div className="grid gap-4 md:grid-cols-3">
               <label className="space-y-1 md:col-span-2">
-                <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Endereco</span>
+                <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Endereço</span>
                 <input
                   className="w-full rounded-xl border border-white/15 bg-[#090f26]/80 px-3 py-2.5 text-[#f1f2f7] outline-none focus:border-[#3f77f5]"
                   value={formAddress}
@@ -1176,7 +1176,7 @@ export default function OnboardingProprietarioPage() {
                         className="w-full rounded-xl border border-white/15 bg-[#0b1330]/85 px-3 py-2.5 text-[#f1f2f7] outline-none focus:border-[#3f77f5]"
                         value={newBarberPassword}
                         onChange={(event) => setNewBarberPassword(event.target.value)}
-                        placeholder="Minimo 6 caracteres"
+                        placeholder="mínimo 6 caracteres"
                         required
                       />
                     </label>
@@ -1215,12 +1215,12 @@ export default function OnboardingProprietarioPage() {
                     />
                   </label>
                   <label className="block space-y-1">
-                    <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Descricao</span>
+                    <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Descrição</span>
                     <input
                       className="w-full rounded-xl border border-white/15 bg-[#0b1330]/85 px-3 py-2.5 text-[#f1f2f7] outline-none focus:border-[#3f77f5]"
                       value={categoryDescription}
                       onChange={(event) => setCategoryDescription(event.target.value)}
-                      placeholder="Servicos principais"
+                      placeholder="Serviços principais"
                     />
                   </label>
                   <UIButton type="submit" disabled={isCreatingCategory}>
@@ -1239,7 +1239,7 @@ export default function OnboardingProprietarioPage() {
                     Voltar
                   </UIButton>
                   <UIButton type="button" onClick={() => setCurrentStep(4)}>
-                    Ir para servicos
+                    Ir para Serviços
                   </UIButton>
                 </div>
               </section>
@@ -1247,7 +1247,7 @@ export default function OnboardingProprietarioPage() {
 
             {currentStep === 4 ? (
               <section className="rounded-2xl border border-white/12 bg-[#090f26]/72 p-4">
-                <h2 className="text-lg font-semibold">Servicos</h2>
+                <h2 className="text-lg font-semibold">Serviços</h2>
                 <form className="mt-3 space-y-3" onSubmit={handleCreateService}>
                   <label className="block space-y-1">
                     <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Nome</span>
@@ -1276,7 +1276,7 @@ export default function OnboardingProprietarioPage() {
                   </label>
                   <div className="grid gap-3 md:grid-cols-2">
                     <label className="block space-y-1">
-                      <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Preco (R$)</span>
+                      <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">preço (R$)</span>
                       <input
                         className="w-full rounded-xl border border-white/15 bg-[#0b1330]/85 px-3 py-2.5 text-[#f1f2f7] outline-none focus:border-[#3f77f5]"
                         value={servicePrice}
@@ -1286,7 +1286,7 @@ export default function OnboardingProprietarioPage() {
                       />
                     </label>
                     <label className="block space-y-1">
-                      <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Duracao (min)</span>
+                      <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">duração (min)</span>
                       <input
                         className="w-full rounded-xl border border-white/15 bg-[#0b1330]/85 px-3 py-2.5 text-[#f1f2f7] outline-none focus:border-[#3f77f5]"
                         type="number"
@@ -1299,7 +1299,7 @@ export default function OnboardingProprietarioPage() {
                     </label>
                   </div>
                   <label className="block space-y-1">
-                    <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Descricao</span>
+                    <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Descrição</span>
                     <input
                       className="w-full rounded-xl border border-white/15 bg-[#0b1330]/85 px-3 py-2.5 text-[#f1f2f7] outline-none focus:border-[#3f77f5]"
                       value={serviceDescription}
@@ -1308,7 +1308,7 @@ export default function OnboardingProprietarioPage() {
                     />
                   </label>
                   <UIButton type="submit" disabled={isCreatingService}>
-                    {isCreatingService ? "Criando..." : "Criar servico"}
+                    {isCreatingService ? "Criando..." : "Criar Serviço"}
                   </UIButton>
                 </form>
                 <div className="mt-4 space-y-1 text-sm text-[#c9d2ef]">
@@ -1319,7 +1319,7 @@ export default function OnboardingProprietarioPage() {
                       </p>
                     ))
                   ) : (
-                    <p>Nenhum servico criado ainda.</p>
+                    <p>Nenhum Serviço criado ainda.</p>
                   )}
                 </div>
                 <div className="mt-4 flex gap-3">
@@ -1327,7 +1327,7 @@ export default function OnboardingProprietarioPage() {
                     Voltar
                   </UIButton>
                   <UIButton type="button" onClick={() => setCurrentStep(5)}>
-                    Ir para publicacao
+                    Ir para Publicação
                   </UIButton>
                 </div>
               </section>
@@ -1336,13 +1336,13 @@ export default function OnboardingProprietarioPage() {
             {currentStep === 5 ? (
               <section className="rounded-2xl border border-white/12 bg-[#090f26]/72 p-4">
                 <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                  <h2 className="text-lg font-semibold">Publicacao</h2>
+                  <h2 className="text-lg font-semibold">Publicação</h2>
                   <p className={`text-sm font-medium ${readinessStatusColor}`}>
                     {readiness?.ready
                       ? "Pronto para publicar"
                       : readiness
-                        ? "Ainda faltam configuracoes"
-                        : "Checklist ainda nao carregado"}
+                        ? "Ainda faltam Configurações"
+                        : "Checklist ainda não carregado"}
                   </p>
                 </div>
 
@@ -1358,10 +1358,10 @@ export default function OnboardingProprietarioPage() {
                     ))
                   ) : readiness ? (
                     <div className="rounded-lg border border-emerald-300/35 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-100">
-                      Nenhuma pendencia encontrada.
+                      Nenhuma Pendência encontrada.
                     </div>
                   ) : (
-                    <p className="text-sm text-[#a7b1d0]">Checklist ainda nao carregado.</p>
+                    <p className="text-sm text-[#a7b1d0]">Checklist ainda não carregado.</p>
                   )}
                 </div>
 
@@ -1390,7 +1390,7 @@ export default function OnboardingProprietarioPage() {
 
                 <div className="mt-4">
                   <UIButton type="button" variant="secondary" onClick={() => setCurrentStep(4)}>
-                    Voltar para servicos
+                    Voltar para Serviços
                   </UIButton>
                 </div>
               </section>

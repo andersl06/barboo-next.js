@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
@@ -52,18 +52,18 @@ function LocationBlockedIcon() {
 
 function getLocationErrorMessage(error: GeolocationPositionError) {
   if (error.code === error.PERMISSION_DENIED) {
-    return "Permissao negada. Libere a localizacao nas configuracoes do navegador."
+    return "Permissão negada. Libere a localização nas configurações do navegador."
   }
 
   if (error.code === error.POSITION_UNAVAILABLE) {
-    return "Nao foi possivel obter sua localizacao atual."
+    return "Não foi possível obter sua localização atual."
   }
 
   if (error.code === error.TIMEOUT) {
-    return "Tempo esgotado ao tentar capturar localizacao."
+    return "Tempo esgotado ao tentar capturar localização."
   }
 
-  return "Falha ao capturar localizacao."
+  return "Falha ao capturar localização."
 }
 
 export default function ClienteLocalizacaoPage() {
@@ -83,18 +83,18 @@ export default function ClienteLocalizacaoPage() {
   async function validateSession() {
     const token = getAccessToken()
     if (!token) {
-      setError("Sua sessao expirou. Faca login novamente.")
+      setError("Sua sessão expirou. Faça login novamente.")
       return null
     }
 
     try {
       const context = await fetchMeContext(token)
       if (!context.success) {
-        setError("Sua sessao expirou. Faca login novamente.")
+        setError("Sua sessão expirou. Faça login novamente.")
         return null
       }
     } catch {
-      setError("Nao foi possivel validar sua sessao.")
+      setError("Não foi possível validar sua sessão.")
       return null
     }
 
@@ -129,10 +129,10 @@ export default function ClienteLocalizacaoPage() {
         return
       }
 
-      setInfo("Localizacao salva com sucesso.")
+      setInfo("Localização salva com sucesso.")
       router.push(nextPath)
     } catch {
-      setError("Falha de conexao ao salvar localizacao.")
+      setError("Falha de conexão ao salvar localização.")
     } finally {
       setLoading(false)
     }
@@ -140,7 +140,7 @@ export default function ClienteLocalizacaoPage() {
 
   function requestLocation() {
     if (!navigator.geolocation) {
-      setError("Seu navegador nao suporta geolocalizacao.")
+      setError("Seu navegador não suporta geolocalização.")
       return
     }
 
@@ -171,9 +171,9 @@ export default function ClienteLocalizacaoPage() {
           <LocationBlockedIcon />
         </div>
 
-        <h1 className="mt-5 text-3xl font-bold tracking-tight md:text-[38px]">Localizacao necessaria</h1>
+        <h1 className="mt-5 text-3xl font-bold tracking-tight md:text-[38px]">Localização necessária</h1>
         <p className="mx-auto mt-3 max-w-[520px] text-sm leading-relaxed text-[#b9c5eb] md:text-base">
-          Precisamos da sua localizacao para encontrar barbearias perto de voce.
+          Precisamos da sua localização para encontrar barbearias perto de você.
         </p>
 
         {error ? (
@@ -192,15 +192,15 @@ export default function ClienteLocalizacaoPage() {
           <ol className="mt-4 space-y-3 text-[17px] leading-relaxed text-[#e8edff]">
             <li>
               <span className="font-bold text-[#ffb48f]">1)</span> Clique no{" "}
-              <span className="font-semibold text-white">cadeado</span> ao lado do endereco do site.
+              <span className="font-semibold text-white">cadeado</span> ao lado do endereço do site.
             </li>
             <li>
               <span className="font-bold text-[#ffb48f]">2)</span> Abra{" "}
-              <span className="font-semibold text-white">Configuracoes do site</span>.
+              <span className="font-semibold text-white">configurações do site</span>.
             </li>
             <li>
               <span className="font-bold text-[#ffb48f]">3)</span> Selecione{" "}
-              <span className="font-semibold text-white">Localizacao</span>.
+              <span className="font-semibold text-white">localização</span>.
             </li>
             <li>
               <span className="font-bold text-[#ffb48f]">4)</span> Marque{" "}
@@ -216,10 +216,10 @@ export default function ClienteLocalizacaoPage() {
             disabled={loading}
             className="w-full max-w-[320px] !rounded-xl !py-2.5 !text-base !font-semibold !tracking-normal md:!text-lg"
           >
-            {loading ? "ATIVANDO..." : "Ativar localizacao novamente"}
+            {loading ? "ATIVANDO..." : "Ativar localização novamente"}
           </UIButton>
           <p className="max-w-[520px] text-sm text-[#aeb8db]">
-            Apos permitir nas configuracoes do navegador, clique no botao acima.
+            Apos permitir nas Configurações do navegador, clique no botao acima.
           </p>
         </div>
 

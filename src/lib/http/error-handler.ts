@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client"
+﻿import { Prisma } from "@prisma/client"
 import { ZodError } from "zod"
 import { BARBERSHOP_ERRORS } from "@/lib/errors/barbershop-errors"
 import { AUTH_ERRORS } from "@/lib/errors/auth-errors"

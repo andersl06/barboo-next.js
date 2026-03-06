@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client"
+﻿import { Prisma } from "@prisma/client"
 import { hashPasswordResetToken } from "@/lib/auth/password-reset"
 import { prisma } from "@/lib/db/prisma"
 import { AUTH_ERRORS } from "@/lib/errors/auth-errors"
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     if (!parsed.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de validacao",
+        "Erro de Validação",
         400,
         parsed.error.issues.map((issue) => ({
           field:
@@ -131,7 +131,7 @@ export async function POST(req: Request) {
     }
 
     return success({
-      message: "Senha alterada com sucesso. Faca login com a nova senha.",
+      message: "Senha alterada com sucesso. Faça login com a nova senha.",
     })
   } catch (err) {
     return handleError(err)

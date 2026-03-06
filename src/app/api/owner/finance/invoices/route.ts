@@ -1,5 +1,6 @@
-import { prisma } from "@/lib/db/prisma"
+﻿import { prisma } from "@/lib/db/prisma"
 import { markPastConfirmedAppointmentsAsCompleted } from "@/lib/finance/appointments"
+import { generateWeeklyInvoiceForBarbershop } from "@/lib/finance/generate-weekly-invoice"
 import { requireOwnerFinanceContext } from "@/lib/finance/owner-context"
 import { refreshBarbershopFinancialState } from "@/lib/finance/invoices"
 import { failure, success } from "@/lib/http/api-response"
@@ -13,6 +14,9 @@ export async function GET(req: Request) {
     }
 
     await markPastConfirmedAppointmentsAsCompleted(context.barbershopId)
+    await generateWeeklyInvoiceForBarbershop({
+      barbershopId: context.barbershopId,
+    })
     await refreshBarbershopFinancialState(context.barbershopId)
 
     const [invoices, barbershop] = await Promise.all([

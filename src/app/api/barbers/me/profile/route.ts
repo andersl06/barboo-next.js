@@ -1,4 +1,4 @@
-import { requireAuth } from "@/lib/auth/require-auth"
+﻿import { requireAuth } from "@/lib/auth/require-auth"
 import { prisma } from "@/lib/db/prisma"
 import { failure, success } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
@@ -14,7 +14,11 @@ async function resolveMembership(userId: string) {
         role: "OWNER",
         isActive: true,
       },
-      select: { id: true },
+      select: {
+        id: true,
+        role: true,
+        barbershopId: true,
+      },
     }),
     prisma.barbershopMembership.findFirst({
       where: {
@@ -22,11 +26,18 @@ async function resolveMembership(userId: string) {
         role: "BARBER",
         isActive: true,
       },
-      select: { id: true },
+      select: {
+        id: true,
+        role: true,
+        barbershopId: true,
+        canManageBlocks: true,
+      },
     }),
   ])
 
   return {
+    ownerMembership,
+    barberMembership,
     hasOwnerMembership: Boolean(ownerMembership),
     hasBarberMembership: Boolean(barberMembership),
   }
@@ -67,8 +78,12 @@ export async function GET(req: Request) {
     ])
 
     if (!user) {
-      return failure("UNAUTHORIZED", "Usuario nao encontrado.", 401)
+      return failure("UNAUTHORIZED", "Usuário não encontrado.", 401)
     }
+
+    const canManageOwnBlocks =
+      Boolean(membership.ownerMembership)
+      || Boolean(membership.barberMembership?.canManageBlocks)
 
     return success({
       ...profile,
@@ -76,6 +91,7 @@ export async function GET(req: Request) {
       email: user.email,
       phone: user.phone,
       hasBarberMembership: membership.hasBarberMembership,
+      canManageOwnBlocks,
     })
   } catch (err) {
     return handleError(err)
@@ -100,7 +116,7 @@ export async function PATCH(req: Request) {
     if (!parsed.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de validacao",
+        "Erro de Validação",
         400,
         parsed.error.issues.map((issue) => ({
           field:
@@ -177,8 +193,12 @@ export async function PATCH(req: Request) {
       })
 
       if (!user) {
-        throw new Error("Usuario nao encontrado.")
+        throw new Error("Usuário não encontrado.")
       }
+
+      const canManageOwnBlocks =
+        Boolean(membership.ownerMembership)
+        || Boolean(membership.barberMembership?.canManageBlocks)
 
       return {
         ...profile,
@@ -186,14 +206,15 @@ export async function PATCH(req: Request) {
         email: user.email,
         phone: user.phone,
         hasBarberMembership: membership.hasBarberMembership,
+        canManageOwnBlocks,
       }
     })
 
     return success(updated)
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
-      return failure("CONFLICT", "Email ja esta em uso.", 409, [
-        { field: "email", message: "Email ja esta em uso." },
+      return failure("CONFLICT", "Email Já esta em uso.", 409, [
+        { field: "email", message: "Email Já esta em uso." },
       ])
     }
 

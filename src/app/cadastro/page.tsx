@@ -1,4 +1,4 @@
-import Image from "next/image"
+﻿import Image from "next/image"
 import Link from "next/link"
 import { AuthContainer } from "@/components/auth/AuthContainer"
 
@@ -44,7 +44,7 @@ export default function CadastroPage() {
             </div>
             <div>
               <h3 className="text-base font-semibold text-[#e7ebff]">
-                Quero agendar servicos
+                Quero agendar Serviços
               </h3>
             </div>
           </div>

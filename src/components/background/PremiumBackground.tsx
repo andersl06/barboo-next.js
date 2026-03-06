@@ -1,4 +1,4 @@
-import { BackgroundImageLayer } from "./BackgroundImageLayer";
+﻿import { BackgroundImageLayer } from "./BackgroundImageLayer";
 
 type PremiumBackgroundProps = {
   className?: string;

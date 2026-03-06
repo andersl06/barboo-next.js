@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { BarberGate } from "@/components/barber/BarberGate"
@@ -111,7 +111,7 @@ export default function BarberAgendaPage() {
       ])
 
       if (!upcomingResult.success) {
-        setError(resolveError(upcomingResult, "Falha ao carregar proximos."))
+        setError(resolveError(upcomingResult, "Falha ao carregar Próximos."))
         return
       }
 
@@ -126,7 +126,7 @@ export default function BarberAgendaPage() {
       )
       setHistory(historyResult.data.items)
     } catch {
-      setError("Falha de conexao ao carregar agenda.")
+      setError("Falha de conexão ao carregar agenda.")
     } finally {
       setLoading(false)
     }
@@ -199,13 +199,13 @@ export default function BarberAgendaPage() {
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <article className="rounded-xl border border-white/12 bg-[#091029]/85 p-3">
-            <p className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Proximos</p>
+            <p className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Próximos</p>
             <p className="mt-1 text-2xl font-bold">{upcoming.length}</p>
           </article>
           <article className="rounded-xl border border-white/12 bg-[#091029]/85 p-3">
             <p className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Concluidos</p>
             <p className="mt-1 text-2xl font-bold">--</p>
-            <p className="mt-1 text-xs text-[#9eabd4]">Status COMPLETED ainda nao habilitado.</p>
+            <p className="mt-1 text-xs text-[#9eabd4]">Status COMPLETED ainda não habilitado.</p>
           </article>
         </div>
       </section>
@@ -221,7 +221,7 @@ export default function BarberAgendaPage() {
             }`}
             onClick={() => setActiveTab("upcoming")}
           >
-            Proximos
+            Próximos
           </button>
           <button
             type="button"
@@ -253,7 +253,7 @@ export default function BarberAgendaPage() {
               ))
             ) : (
               <p className="rounded-xl border border-white/10 bg-[#0a122f]/70 p-4 text-sm text-[#c6d1ef]">
-                Nenhum atendimento proximo para a data selecionada.
+                Nenhum atendimento Próximo para a data selecionada.
               </p>
             )
           ) : history.length > 0 ? (
@@ -276,7 +276,7 @@ export default function BarberAgendaPage() {
             ))
           ) : (
             <p className="rounded-xl border border-white/10 bg-[#0a122f]/70 p-4 text-sm text-[#c6d1ef]">
-              Historico vazio para a data selecionada. Concluidos ficarao disponiveis quando o status COMPLETED for adicionado.
+              Historico vazio para a data selecionada. Concluidos ficarao Disponíveis quando o status COMPLETED for adicionado.
             </p>
           )}
         </div>

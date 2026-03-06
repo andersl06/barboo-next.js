@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react"
 import { BarberGate } from "@/components/barber/BarberGate"
@@ -29,6 +29,7 @@ type BarberProfileData = {
   avatarUrl: string | null
   weeklySchedule: unknown
   hasBarberMembership: boolean
+  canManageOwnBlocks: boolean
 }
 
 type BarberBlock = {
@@ -132,7 +133,7 @@ export default function BarberEditPage() {
     setPhone(formatPhone(data.phone ?? ""))
     setBio(data.bio ?? "")
     setAvatarUrl(data.avatarUrl ?? null)
-    setCanManageOwnBlocks(data.hasBarberMembership)
+    setCanManageOwnBlocks(data.canManageOwnBlocks)
   }, [])
 
   const loadData = useCallback(async () => {
@@ -155,7 +156,7 @@ export default function BarberEditPage() {
 
       applyProfileData(profileResult.data)
 
-      if (!profileResult.data.hasBarberMembership || !userId || !barbershopId) {
+      if (!profileResult.data.canManageOwnBlocks || !userId || !barbershopId) {
         setBlocks([])
         return
       }
@@ -168,13 +169,13 @@ export default function BarberEditPage() {
       const blocksResult = await blocksResponse.json() as ApiResult<BarberBlock[]>
       if (!blocksResult.success) {
         setBlocks([])
-        setBlockError(resolveError(blocksResult, "Sem permissao para gerenciar bloqueios."))
+        setBlockError(resolveError(blocksResult, "Sem permissão para gerenciar bloqueios."))
         return
       }
 
       setBlocks(blocksResult.data)
     } catch {
-      setError("Falha de conexao ao carregar configuracoes do perfil.")
+      setError("Falha de conexão ao carregar Configurações do perfil.")
     }
   }, [applyProfileData, barbershopId, token, userId])
 
@@ -212,7 +213,7 @@ export default function BarberEditPage() {
       setSuccess(successMessage)
       return true
     } catch {
-      setError("Falha de conexao ao atualizar perfil.")
+      setError("Falha de conexão ao atualizar perfil.")
       return false
     }
   }, [applyProfileData, token])
@@ -301,7 +302,7 @@ export default function BarberEditPage() {
       setAvatarFile(null)
       setSuccess("Avatar atualizado com sucesso.")
     } catch {
-      setError("Falha de conexao ao atualizar avatar.")
+      setError("Falha de conexão ao atualizar avatar.")
     } finally {
       setUploadingAvatar(false)
     }
@@ -352,7 +353,7 @@ export default function BarberEditPage() {
       setBlockReason("")
       setSuccess("Bloqueio adicionado com sucesso.")
     } catch {
-      setBlockError("Falha de conexao ao criar bloqueio.")
+      setBlockError("Falha de conexão ao criar bloqueio.")
     } finally {
       setSavingBlock(false)
     }
@@ -380,7 +381,7 @@ export default function BarberEditPage() {
 
       setBlocks((prev) => prev.filter((item) => item.id !== blockId))
     } catch {
-      setBlockError("Falha de conexao ao remover bloqueio.")
+      setBlockError("Falha de conexão ao remover bloqueio.")
     } finally {
       setRemovingBlockId(null)
     }
@@ -402,7 +403,7 @@ export default function BarberEditPage() {
   return (
     <BarberShell
       title="Editar perfil"
-      subtitle="Configuracoes separadas para dados pessoais, contato, senha, bio e avatar."
+      subtitle="Configurações separadas para dados pessoais, contato, senha, bio e avatar."
       activePath="/barber/edit"
       statusLabel={barbershopStatus}
     >
@@ -504,7 +505,7 @@ export default function BarberEditPage() {
               maxLength={500}
               value={bio}
               onChange={(event) => setBio(event.target.value)}
-              placeholder="Descreva seu estilo, especialidades e experiencia."
+              placeholder="Descreva seu estilo, especialidades e experiência."
             />
             <UIButton type="submit" className="!w-auto !px-4 !py-2 !text-sm" disabled={savingBio}>
               {savingBio ? "Salvando..." : "Salvar bio"}
@@ -548,7 +549,7 @@ export default function BarberEditPage() {
         <h2 className="text-lg font-semibold">Bloqueios de agenda</h2>
         {!canManageOwnBlocks ? (
           <p className="mt-3 rounded-xl border border-white/10 bg-[#091029]/75 p-3 text-sm text-[#c6d1ef]">
-            Este recurso fica disponivel apenas para owner que tambem esteja habilitado como barbeiro.
+            Este recurso fica disponível apenas para barbeiros com permissão de bloqueio ou proprietários habilitados como barbeiro.
           </p>
         ) : (
           <>
@@ -583,7 +584,7 @@ export default function BarberEditPage() {
               {!blockAllDay ? (
                 <div className="grid grid-cols-2 gap-2">
                   <label className="block">
-                    <span className="mb-1 block text-sm text-[#b8c3e6]">Inicio</span>
+                    <span className="mb-1 block text-sm text-[#b8c3e6]">Início</span>
                     <input
                       type="time"
                       value={blockStartTime}

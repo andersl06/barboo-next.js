@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
@@ -87,7 +87,7 @@ function mapStatusLabel(status: AppointmentItem["displayStatus"]) {
   if (status === "CONFIRMED") return "Confirmado"
   if (status === "CANCELED") return "Cancelado"
   if (status === "REJECTED") return "Recusado"
-  return "Concluido"
+  return "Concluído"
 }
 
 function statusClass(status: AppointmentItem["displayStatus"]) {
@@ -144,7 +144,7 @@ export default function ClienteAgendamentosPage() {
         current && result.data.items.some((item) => item.id === current) ? current : null
       )
     } catch {
-      setError("Falha de conexao ao carregar seus agendamentos.")
+      setError("Falha de conexão ao carregar seus agendamentos.")
     } finally {
       setLoadingItems(false)
     }
@@ -188,7 +188,7 @@ export default function ClienteAgendamentosPage() {
       setPendingCancelConfirmId(null)
       await loadAppointments(tab)
     } catch {
-      setError("Falha de conexao ao cancelar agendamento.")
+      setError("Falha de conexão ao cancelar agendamento.")
     } finally {
       setCancelingId(null)
     }
@@ -211,7 +211,7 @@ export default function ClienteAgendamentosPage() {
       <main className="relative min-h-[100svh] overflow-hidden bg-[#070B16] px-4 py-8 text-[#f1f2f7] md:px-8 md:py-12">
         <PremiumBackground />
         <section className="relative z-10 mx-auto max-w-3xl rounded-3xl border border-white/10 bg-[#0d1434]/80 p-6 text-center">
-          <p className="text-[#d0d7ef]">Voce precisa fazer login para acessar seus agendamentos.</p>
+          <p className="text-[#d0d7ef]">Você precisa fazer login para acessar seus agendamentos.</p>
           <Link className="mt-4 inline-flex rounded-lg border border-white/15 px-4 py-2" href="/login">
             Ir para login
           </Link>
@@ -228,7 +228,7 @@ export default function ClienteAgendamentosPage() {
           <div>
             <h1 className="text-3xl font-bold">Meus agendamentos</h1>
             <p className="mt-1 text-sm text-[#a7b1d0] md:text-base">
-              Acompanhe seus proximos atendimentos e historico.
+              Acompanhe seus Próximos atendimentos e historico.
             </p>
           </div>
           <UIButton
@@ -252,7 +252,7 @@ export default function ClienteAgendamentosPage() {
                 : "text-[#b7c3e7] hover:bg-white/5"
             }`}
           >
-            Proximos
+            Próximos
           </button>
           <button
             type="button"
@@ -286,7 +286,7 @@ export default function ClienteAgendamentosPage() {
         ) : !hasItems ? (
           <div className="mt-6 rounded-2xl border border-white/12 bg-[#0b1330]/80 p-5">
             <p className="text-base font-semibold text-[#dbe4ff]">
-              {tab === "upcoming" ? "Nenhum agendamento proximo." : "Nenhum agendamento no historico."}
+              {tab === "upcoming" ? "Nenhum agendamento Próximo." : "Nenhum agendamento no historico."}
             </p>
             {tab === "upcoming" ? (
               <UIButton href="/cliente/barbearias-proximas" className="mt-4 !w-auto !px-4 !py-2 !text-sm">
@@ -327,7 +327,7 @@ export default function ClienteAgendamentosPage() {
                   Data/hora: <span className="font-semibold">{formatDateTime(item.startAt)}</span>
                 </p>
                 <p className="text-sm text-[#d2daf3]">
-                  Duracao/servico: {item.service.durationMinutes} min - {formatCurrency(item.servicePriceCents)}
+                  duração/serviço: {item.service.durationMinutes} min - {formatCurrency(item.servicePriceCents)}
                 </p>
                 <p className="text-sm text-[#d2daf3]">
                   Taxa/total: {formatCurrency(item.serviceFeeCents)} - {formatCurrency(item.totalPriceCents)}
@@ -375,10 +375,10 @@ export default function ClienteAgendamentosPage() {
                       )
                     ) : (
                       <span
-                        title="Voce so pode cancelar ate 30 minutos antes."
+                        title="Você só pode cancelar até 30 minutos antes."
                         className="inline-flex rounded-lg border border-white/15 bg-[#111c47] px-3 py-1.5 text-xs font-semibold text-[#9fb0dd]"
                       >
-                        Voce so pode cancelar ate 30 minutos antes.
+                        Você só pode cancelar até 30 minutos antes.
                       </span>
                     )}
                   </div>

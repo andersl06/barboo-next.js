@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db/prisma"
+﻿import { prisma } from "@/lib/db/prisma"
 import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"
 import { getClientIp } from "@/lib/http/client-ip"
 import { failure, success } from "@/lib/http/api-response"

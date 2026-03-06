@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react"
 import { OwnerGate } from "@/components/owner/OwnerGate"
@@ -107,7 +107,7 @@ export default function OwnerServicesPage() {
       }
 
       if (!servicesResult.success) {
-        setError(resolveError(servicesResult, "Falha ao carregar servicos."))
+        setError(resolveError(servicesResult, "Falha ao carregar Serviços."))
         return
       }
 
@@ -129,7 +129,7 @@ export default function OwnerServicesPage() {
         )
       )
     } catch {
-      setError("Falha de conexao ao carregar servicos.")
+      setError("Falha de conexão ao carregar Serviços.")
     } finally {
       setLoading(false)
     }
@@ -147,11 +147,11 @@ export default function OwnerServicesPage() {
     const priceCents = parsePriceToCents(newPrice)
     const durationMinutes = Number(newDuration)
     if (priceCents === null) {
-      setError("Preco invalido.")
+      setError("preço inválido.")
       return
     }
     if (!Number.isInteger(durationMinutes) || durationMinutes < 5) {
-      setError("Duracao invalida. Informe ao menos 5 minutos.")
+      setError("duração inválida. Informe ao menos 5 minutos.")
       return
     }
 
@@ -176,7 +176,7 @@ export default function OwnerServicesPage() {
 
       const result = (await response.json()) as ApiResult<ServiceItem>
       if (!result.success) {
-        setError(resolveError(result, "Falha ao criar servico."))
+        setError(resolveError(result, "Falha ao criar Serviço."))
         return
       }
 
@@ -185,10 +185,10 @@ export default function OwnerServicesPage() {
       setNewDescription("")
       setNewPrice("")
       setNewDuration("30")
-      setInfo("Servico criado com sucesso.")
+      setInfo("Serviço criado com sucesso.")
       await loadData()
     } catch {
-      setError("Falha de conexao ao criar servico.")
+      setError("Falha de conexão ao criar Serviço.")
     } finally {
       setCreating(false)
     }
@@ -202,11 +202,11 @@ export default function OwnerServicesPage() {
     const priceCents = parsePriceToCents(draft.price)
     const durationMinutes = Number(draft.durationMinutes)
     if (priceCents === null) {
-      setError("Preco invalido.")
+      setError("preço inválido.")
       return
     }
     if (!Number.isInteger(durationMinutes) || durationMinutes < 5) {
-      setError("Duracao invalida. Informe ao menos 5 minutos.")
+      setError("duração inválida. Informe ao menos 5 minutos.")
       return
     }
 
@@ -232,14 +232,14 @@ export default function OwnerServicesPage() {
 
       const result = (await response.json()) as ApiResult<ServiceItem>
       if (!result.success) {
-        setError(resolveError(result, "Falha ao atualizar servico."))
+        setError(resolveError(result, "Falha ao atualizar Serviço."))
         return
       }
 
-      setInfo("Servico atualizado com sucesso.")
+      setInfo("Serviço atualizado com sucesso.")
       await loadData()
     } catch {
-      setError("Falha de conexao ao atualizar servico.")
+      setError("Falha de conexão ao atualizar Serviço.")
     } finally {
       setSavingId(null)
     }
@@ -248,8 +248,8 @@ export default function OwnerServicesPage() {
   if (state !== "ready") {
     return (
       <OwnerShell
-        title="Servicos"
-        subtitle="Gerencie valores, duracao e disponibilidade."
+        title="Serviços"
+        subtitle="Gerencie valores, duração e disponibilidade."
         activePath="/owner/services"
         statusLabel={barbershopStatus}
       >
@@ -260,7 +260,7 @@ export default function OwnerServicesPage() {
 
   return (
     <OwnerShell
-      title="Servicos"
+      title="Serviços"
       subtitle={`Total: ${services.length} | Ativos: ${activeCount}`}
       activePath="/owner/services"
       statusLabel={barbershopStatus}
@@ -277,7 +277,7 @@ export default function OwnerServicesPage() {
       ) : null}
 
       <form className="rounded-2xl border border-white/12 bg-[#0b1330]/82 p-4" onSubmit={handleCreate}>
-        <h2 className="text-lg font-semibold">Novo servico</h2>
+        <h2 className="text-lg font-semibold">Novo Serviço</h2>
         <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           <label className="space-y-1">
             <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Nome</span>
@@ -306,7 +306,7 @@ export default function OwnerServicesPage() {
             </select>
           </label>
           <label className="space-y-1">
-            <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Preco (R$)</span>
+            <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">preço (R$)</span>
             <input
               className="w-full rounded-xl border border-white/15 bg-[#090f26]/80 px-3 py-2.5 text-[#f1f2f7] outline-none focus:border-[#3f77f5]"
               value={newPrice}
@@ -316,7 +316,7 @@ export default function OwnerServicesPage() {
             />
           </label>
           <label className="space-y-1">
-            <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Duracao (min)</span>
+            <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">duração (min)</span>
             <input
               type="number"
               min={5}
@@ -328,7 +328,7 @@ export default function OwnerServicesPage() {
             />
           </label>
           <label className="space-y-1 md:col-span-2">
-            <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Descricao</span>
+            <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Descrição</span>
             <input
               className="w-full rounded-xl border border-white/15 bg-[#090f26]/80 px-3 py-2.5 text-[#f1f2f7] outline-none focus:border-[#3f77f5]"
               value={newDescription}
@@ -339,14 +339,14 @@ export default function OwnerServicesPage() {
         </div>
         <div className="mt-3">
           <UIButton type="submit" disabled={creating}>
-            {creating ? "Criando..." : "Criar servico"}
+            {creating ? "Criando..." : "Criar Serviço"}
           </UIButton>
         </div>
       </form>
 
       <section className="mt-5 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">Servicos cadastrados</h2>
+          <h2 className="text-lg font-semibold">Serviços cadastrados</h2>
           <UIButton type="button" variant="secondary" onClick={loadData} disabled={loading}>
             {loading ? "Atualizando..." : "Atualizar lista"}
           </UIButton>
@@ -354,7 +354,7 @@ export default function OwnerServicesPage() {
 
         {services.length === 0 ? (
           <div className="rounded-2xl border border-white/12 bg-[#0b1330]/82 p-4 text-sm text-[#c5cee9]">
-            Nenhum servico cadastrado.
+            Nenhum Serviço cadastrado.
           </div>
         ) : (
           <div className="grid gap-3">
@@ -398,7 +398,7 @@ export default function OwnerServicesPage() {
                       </select>
                     </label>
                     <label className="space-y-1">
-                      <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Preco (R$)</span>
+                      <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">preço (R$)</span>
                       <input
                         className="w-full rounded-xl border border-white/15 bg-[#090f26]/80 px-3 py-2.5 text-[#f1f2f7] outline-none focus:border-[#3f77f5]"
                         value={draft.price}
@@ -411,7 +411,7 @@ export default function OwnerServicesPage() {
                       />
                     </label>
                     <label className="space-y-1">
-                      <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Duracao (min)</span>
+                      <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">duração (min)</span>
                       <input
                         type="number"
                         min={5}
@@ -427,7 +427,7 @@ export default function OwnerServicesPage() {
                       />
                     </label>
                     <label className="space-y-1 md:col-span-2">
-                      <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Descricao</span>
+                      <span className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Descrição</span>
                       <input
                         className="w-full rounded-xl border border-white/15 bg-[#090f26]/80 px-3 py-2.5 text-[#f1f2f7] outline-none focus:border-[#3f77f5]"
                         value={draft.description}

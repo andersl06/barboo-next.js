@@ -1,4 +1,4 @@
-import { z } from "zod"
+﻿import { z } from "zod"
 import { requireAuth } from "@/lib/auth/require-auth"
 import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"
 import { prisma } from "@/lib/db/prisma"
@@ -8,11 +8,11 @@ import { requireMembership } from "@/lib/membership/require-membership"
 
 const updateTeamMemberSchema = z
   .object({
-    name: z.string().trim().min(2, "Nome deve ter no minimo 2 caracteres.").max(120, "Nome deve ter no maximo 120 caracteres.").optional(),
+    name: z.string().trim().min(2, "Nome deve ter no mínimo 2 caracteres.").max(120, "Nome deve ter no máximo 120 caracteres.").optional(),
     bio: z
       .string()
       .trim()
-      .max(500, "Bio deve ter no maximo 500 caracteres.")
+      .max(500, "Bio deve ter no máximo 500 caracteres.")
       .optional()
       .transform((value) => (value === undefined ? undefined : value.length > 0 ? value : null)),
     canManageBlocks: z.boolean().optional(),
@@ -67,14 +67,14 @@ export async function PATCH(
     })
 
     if (!targetMembership || !targetMembership.isActive) {
-      return failure("NOT_FOUND", "Barbeiro nao encontrado na barbearia.", 404)
+      return failure("NOT_FOUND", "Barbeiro não encontrado na barbearia.", 404)
     }
 
     const parsed = updateTeamMemberSchema.safeParse(await req.json())
     if (!parsed.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de validacao",
+        "Erro de Validação",
         400,
         parsed.error.issues.map((issue) => ({
           field:
@@ -159,7 +159,7 @@ export async function PATCH(
     })
 
     if (!updated) {
-      return failure("NOT_FOUND", "Barbeiro nao encontrado na barbearia.", 404)
+      return failure("NOT_FOUND", "Barbeiro não encontrado na barbearia.", 404)
     }
 
     return success({
@@ -207,7 +207,7 @@ export async function DELETE(
     })
 
     if (!targetMembership || !targetMembership.isActive) {
-      return failure("NOT_FOUND", "Barbeiro nao encontrado na barbearia.", 404)
+      return failure("NOT_FOUND", "Barbeiro não encontrado na barbearia.", 404)
     }
 
     if (targetMembership.role !== "BARBER") {

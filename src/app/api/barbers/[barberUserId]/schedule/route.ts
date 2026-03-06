@@ -1,4 +1,4 @@
-import { requireAuth } from "@/lib/auth/require-auth"
+﻿import { requireAuth } from "@/lib/auth/require-auth"
 import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"
 import { prisma } from "@/lib/db/prisma"
 import { BARBER_PROFILE_ERRORS } from "@/lib/errors/barber-profile-errors"
@@ -16,7 +16,7 @@ export async function PUT(
     const barbershopId = new URL(req.url).searchParams.get("barbershopId")
 
     if (!barbershopId) {
-      return failure("BAD_REQUEST", "barbershopId e obrigatorio", 400)
+      return failure("BAD_REQUEST", "barbershopId é obrigatório", 400)
     }
 
     const auth = await requireAuth(req)
@@ -63,7 +63,7 @@ export async function PUT(
       )
 
     if (!isAllowedTarget) {
-      return failure("NOT_FOUND", "Barbeiro nao encontrado na barbearia", 404)
+      return failure("NOT_FOUND", "Barbeiro não encontrado na barbearia", 404)
     }
 
     const body = await req.json()
@@ -71,7 +71,7 @@ export async function PUT(
     if (!parsed.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de validacao",
+        "Erro de Validação",
         400,
         parsed.error.issues.map((issue) => ({
           field:

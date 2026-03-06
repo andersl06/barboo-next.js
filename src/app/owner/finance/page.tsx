@@ -1,4 +1,4 @@
-
+﻿
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
@@ -91,7 +91,6 @@ type InvoicesData = {
 
 type PayInvoiceData = {
   invoiceId: string
-  chargeId: string
   qrCodeImageUrl: string | null
   qrCodeCopyPaste: string
   expiresAt: string | null
@@ -102,26 +101,20 @@ type PayInvoiceData = {
 
 type ChargeStatusData = {
   invoiceId: string
-  chargeId: string
   status: ChargeStatus
-  invoiceStatus: "OPEN" | "PAID" | "OVERDUE" | "VOID"
   paidAt: string | null
-  amountCents: number | null
   expiresAt: string | null
-  pollingDelayMs?: number
   rateLimited?: boolean
 }
 
 type PaymentSession = {
   invoiceId: string
-  chargeId: string
   qrCodeImageUrl: string | null
   qrCodeCopyPaste: string
   expiresAt: string | null
   amountCents: number
   status: ChargeStatus
   polling: boolean
-  attempts: number
   timeoutReached: boolean
   rateLimited: boolean
   paidAt: string | null
@@ -129,7 +122,7 @@ type PaymentSession = {
 }
 
 const MAX_POLL_ATTEMPTS = 100
-const BASE_POLL_DELAY_MS = 3000
+const POLL_INTERVAL_MS = 3000
 
 function resolveErrorMessage(result: ApiFailure, fallback: string) {
   return result.errors?.[0]?.message ?? result.message ?? fallback
@@ -175,7 +168,7 @@ function formatDateTime(value: string) {
 }
 
 function formatCountdown(expiresAt: string | null, nowMs: number) {
-  if (!expiresAt) return "Sem expiracao informada"
+  if (!expiresAt) return "Sem Expiração informada"
 
   const remainingMs = new Date(expiresAt).getTime() - nowMs
   if (!Number.isFinite(remainingMs) || remainingMs <= 0) return "Expirado"
@@ -192,6 +185,13 @@ function statusBadgeClass(status: InvoiceItem["status"]) {
   if (status === "OVERDUE") return "border-red-300/35 bg-red-500/12 text-red-100"
   if (status === "VOID") return "border-white/20 bg-[#131d45] text-[#ced8fa]"
   return "border-amber-300/35 bg-amber-500/12 text-amber-100"
+}
+
+function invoiceStatusLabel(status: InvoiceItem["status"]) {
+  if (status === "PAID") return "Pago"
+  if (status === "OVERDUE") return "Vencida"
+  if (status === "VOID") return "Cancelada"
+  return "Em aberto"
 }
 
 function chargeBadgeClass(status: ChargeStatus) {
@@ -239,6 +239,7 @@ export default function OwnerFinancePage() {
   const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null)
   const [paymentSession, setPaymentSession] = useState<PaymentSession | null>(null)
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null)
+  const [validatingPayment, setValidatingPayment] = useState(false)
   const [countdownNowMs, setCountdownNowMs] = useState(Date.now())
 
   const pollingAbortRef = useRef(false)
@@ -297,121 +298,122 @@ export default function OwnerFinancePage() {
         current && invoicesResult.data.items.some((item) => item.id === current) ? current : null
       )
     } catch {
-      setError("Falha de conexao ao carregar dados financeiros.")
+      setError("Falha de conexão ao carregar dados financeiros.")
     } finally {
       setLoading(false)
     }
   }, [month, token])
 
-  const startPaymentPolling = useCallback((invoiceId: string, chargeId: string) => {
+  const checkPaymentStatus = useCallback(async (invoiceId: string, options?: { manual?: boolean }) => {
+    if (!token) return
+
+    try {
+      const response = await fetch(`/api/billing/invoices/${invoiceId}/pay/status`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      })
+
+      const result = (await response.json()) as ApiResult<ChargeStatusData>
+      if (!result.success) {
+        setPaymentSession((current) => {
+          if (!current || current.invoiceId !== invoiceId) return current
+          return {
+            ...current,
+            polling: true,
+            message: resolveErrorMessage(
+              result,
+              options?.manual
+                ? "Pagamento ainda não confirmado."
+                : "Falha ao confirmar o pagamento. Retentando..."
+            ),
+          }
+        })
+        return
+      }
+
+      const data = result.data
+      setPaymentSession((current) => {
+        if (!current || current.invoiceId !== invoiceId) return current
+        return {
+          ...current,
+          status: data.status,
+          expiresAt: data.expiresAt ?? current.expiresAt,
+          rateLimited: Boolean(data.rateLimited),
+          polling: data.status === "PENDING" || data.status === "UNKNOWN",
+          timeoutReached: data.status === "EXPIRED" ? true : current.timeoutReached,
+          paidAt: data.paidAt,
+          message:
+            data.status === "PAID"
+              ? "Pagamento confirmado com sucesso."
+              : data.status === "EXPIRED"
+                ? "Pagamento não confirmado. Você pode tentar novamente."
+                : data.rateLimited
+                  ? "Consulta de status em limite temporario. Tente novamente em alguns segundos."
+                  : options?.manual
+                    ? "Pagamento ainda não confirmado."
+                    : null,
+        }
+      })
+
+      if (data.status === "PAID") {
+        pollingAbortRef.current = true
+        await loadFinanceData()
+      }
+
+      if (data.status === "EXPIRED") {
+        pollingAbortRef.current = true
+      }
+    } catch {
+      setPaymentSession((current) => {
+        if (!current || current.invoiceId !== invoiceId) return current
+        return {
+          ...current,
+          polling: true,
+          message: options?.manual
+            ? "Falha de conexão ao validar pagamento."
+            : "Falha de conexão ao consultar pagamento. Retentando...",
+        }
+      })
+    }
+  }, [loadFinanceData, token])
+
+  const startPaymentPolling = useCallback((invoiceId: string) => {
     if (!token) return
 
     pollingAbortRef.current = false
 
     void (async () => {
-      let delayMs = BASE_POLL_DELAY_MS
-
       for (let attempt = 1; attempt <= MAX_POLL_ATTEMPTS; attempt += 1) {
         if (pollingAbortRef.current) return
-        if (paymentSessionRef.current?.invoiceId !== invoiceId) return
+        if (paymentSessionRef.current && paymentSessionRef.current.invoiceId !== invoiceId) return
 
-        await wait(delayMs)
+        await wait(POLL_INTERVAL_MS)
         if (pollingAbortRef.current) return
-        if (paymentSessionRef.current?.invoiceId !== invoiceId) return
+        if (paymentSessionRef.current && paymentSessionRef.current.invoiceId !== invoiceId) return
 
-        try {
-          const response = await fetch(`/api/billing/charges/${chargeId}/status`, {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            cache: "no-store",
-          })
+        await checkPaymentStatus(invoiceId)
 
-          const result = (await response.json()) as ApiResult<ChargeStatusData>
-
-          if (!result.success) {
-            setPaymentSession((current) => {
-              if (!current || current.chargeId !== chargeId) return current
-              return {
-                ...current,
-                attempts: attempt,
-                polling: true,
-                message: resolveErrorMessage(result, "Falha ao confirmar o pagamento. Retentando..."),
-              }
-            })
-            delayMs = 2000
-            continue
-          }
-
-          const data = result.data
-          const nextDelay = Number.isFinite(data.pollingDelayMs) && (data.pollingDelayMs ?? 0) > 0
-            ? Math.min(Math.max(data.pollingDelayMs ?? BASE_POLL_DELAY_MS, BASE_POLL_DELAY_MS), 5000)
-            : BASE_POLL_DELAY_MS
-
-          setPaymentSession((current) => {
-            if (!current || current.chargeId !== chargeId) return current
-            return {
-              ...current,
-              attempts: attempt,
-              status: data.status,
-              amountCents: data.amountCents ?? current.amountCents,
-              expiresAt: data.expiresAt ?? current.expiresAt,
-              rateLimited: Boolean(data.rateLimited),
-              polling: data.status === "PENDING" || data.status === "UNKNOWN",
-              timeoutReached: data.status === "EXPIRED" ? true : current.timeoutReached,
-              paidAt: data.paidAt,
-              message:
-                data.status === "PAID"
-                  ? "Pagamento confirmado com sucesso."
-                  : data.status === "EXPIRED"
-                    ? "Pagamento nao confirmado. Voce pode tentar novamente."
-                    : data.rateLimited
-                      ? "Consulta de status em limite temporario. Continuando com intervalo maior."
-                      : null,
-            }
-          })
-
-          if (data.status === "PAID") {
-            pollingAbortRef.current = true
-            await loadFinanceData()
-            return
-          }
-
-          if (data.status === "EXPIRED") {
-            pollingAbortRef.current = true
-            return
-          }
-
-          delayMs = nextDelay
-        } catch {
-          setPaymentSession((current) => {
-            if (!current || current.chargeId !== chargeId) return current
-            return {
-              ...current,
-              attempts: attempt,
-              polling: true,
-              message: "Falha de conexao ao consultar pagamento. Retentando...",
-            }
-          })
-          delayMs = 2000
-        }
+        const currentStatus = paymentSessionRef.current?.status
+        if (currentStatus === "PAID" || currentStatus === "EXPIRED") return
       }
 
       if (pollingAbortRef.current) return
 
       setPaymentSession((current) => {
-        if (!current || current.chargeId !== chargeId) return current
+        if (!current || current.invoiceId !== invoiceId) return current
         return {
           ...current,
           polling: false,
           timeoutReached: true,
-          message: "Pagamento nao confirmado em 5 minutos. Voce pode tentar novamente.",
+          message: "Pagamento não confirmado em 5 minutos. Você pode tentar novamente.",
         }
       })
       pollingAbortRef.current = true
     })()
-  }, [loadFinanceData, token])
+  }, [checkPaymentStatus, token])
 
   useEffect(() => {
     if (state !== "ready") return
@@ -457,7 +459,7 @@ export default function OwnerFinancePage() {
 
       await loadFinanceData()
     } catch {
-      setError("Falha de conexao ao gerar fatura semanal.")
+      setError("Falha de conexão ao gerar fatura semanal.")
     } finally {
       setGenerating(false)
     }
@@ -482,7 +484,7 @@ export default function OwnerFinancePage() {
       }
       await loadFinanceData()
     } catch {
-      setError("Falha de conexao ao atualizar concluidos.")
+      setError("Falha de conexão ao atualizar concluidos.")
     } finally {
       setCompletingPast(false)
     }
@@ -506,26 +508,24 @@ export default function OwnerFinancePage() {
 
       const result = (await response.json()) as ApiResult<PayInvoiceData>
       if (!result.success) {
-        setError(resolveErrorMessage(result, "Falha ao gerar cobranca PIX da fatura."))
+        setError(resolveErrorMessage(result, "Falha ao gerar Cobrança PIX da fatura."))
         return
       }
 
       const session: PaymentSession = {
         invoiceId: result.data.invoiceId,
-        chargeId: result.data.chargeId,
         qrCodeImageUrl: result.data.qrCodeImageUrl,
         qrCodeCopyPaste: result.data.qrCodeCopyPaste,
         expiresAt: result.data.expiresAt,
         amountCents: result.data.amountCents,
         status: result.data.status,
         polling: result.data.status === "PENDING" || result.data.status === "UNKNOWN",
-        attempts: 0,
         timeoutReached: false,
         rateLimited: false,
         paidAt: null,
         message: result.data.reused
-          ? "Reutilizando cobranca PIX ativa."
-          : "Cobranca PIX criada. Aguardando pagamento...",
+          ? "Reutilizando Cobrança PIX ativa."
+          : "Cobrança PIX criada. Aguardando pagamento...",
       }
 
       setPaymentSession(session)
@@ -535,9 +535,9 @@ export default function OwnerFinancePage() {
         return
       }
 
-      startPaymentPolling(session.invoiceId, session.chargeId)
+      startPaymentPolling(session.invoiceId)
     } catch {
-      setError("Falha de conexao ao gerar cobranca PIX.")
+      setError("Falha de conexão ao gerar Cobrança PIX.")
     } finally {
       setPayingInvoiceId(null)
     }
@@ -548,14 +548,25 @@ export default function OwnerFinancePage() {
     await payInvoice(paymentSession.invoiceId)
   }
 
+  async function validatePaymentNow() {
+    if (!paymentSession) return
+
+    setValidatingPayment(true)
+    try {
+      await checkPaymentStatus(paymentSession.invoiceId, { manual: true })
+    } finally {
+      setValidatingPayment(false)
+    }
+  }
+
   async function copyPixCode() {
     if (!paymentSession?.qrCodeCopyPaste) return
 
     try {
       await navigator.clipboard.writeText(paymentSession.qrCodeCopyPaste)
-      setCopyFeedback("Codigo PIX copiado.")
+      setCopyFeedback("Código PIX copiado.")
     } catch {
-      setCopyFeedback("Nao foi possivel copiar o codigo PIX.")
+      setCopyFeedback("Não foi possível copiar o Código PIX.")
     }
   }
 
@@ -566,17 +577,23 @@ export default function OwnerFinancePage() {
     setCopyFeedback(null)
   }
 
+  function deferPaymentModal() {
+    stopPaymentPolling()
+    setPaymentSession(null)
+    setCopyFeedback(null)
+  }
+
   const cards = useMemo(() => [
     {
-      label: "Agendamentos no mes",
+      label: "Agendamentos no Mês",
       value: summary ? String(summary.monthlyAppointmentsCount) : "--",
     },
     {
-      label: "Valor do mes (servicos)",
+      label: "Valor do Mês (Serviços)",
       value: summary ? formatCurrency(summary.monthlyServiceAmountCents) : "--",
     },
     {
-      label: "Valor total do mes (cliente)",
+      label: "Valor total do Mês (cliente)",
       value: summary ? formatCurrency(summary.monthlyTotalAmountCents) : "--",
     },
   ], [summary])
@@ -597,13 +614,13 @@ export default function OwnerFinancePage() {
   return (
     <OwnerShell
       title="Financeiro"
-      subtitle="Acompanhe valores do mes, faturas semanais e status financeiro da barbearia."
+      subtitle="Acompanhe valores do Mês, faturas semanais e status financeiro da barbearia."
       activePath="/owner/finance"
       statusLabel={barbershopStatus}
     >
       {summary?.financialStatus === "BLOCKED" ? (
         <p className="rounded-xl border border-red-300/35 bg-red-500/12 px-3.5 py-2.5 text-sm text-red-100">
-          Sua barbearia esta bloqueada por pendencia financeira. Regularize para voltar a receber agendamentos.
+          Sua barbearia esta bloqueada por Pendência financeira. Regularize para voltar a receber agendamentos.
         </p>
       ) : null}
 
@@ -616,7 +633,7 @@ export default function OwnerFinancePage() {
       <section className="mt-4 rounded-2xl border border-white/12 bg-[#0b1330]/82 p-4">
         <div className="flex flex-wrap items-end gap-3">
           <label className="block">
-            <span className="mb-1 block text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Mes</span>
+            <span className="mb-1 block text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Mês</span>
             <input
               type="month"
               value={month}
@@ -727,7 +744,7 @@ export default function OwnerFinancePage() {
 
                     <div className="flex flex-wrap items-center gap-2">
                       <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${statusBadgeClass(invoice.status)}`}>
-                        {invoice.status}
+                        {invoiceStatusLabel(invoice.status)}
                       </span>
                       {(invoice.status === "OPEN" || invoice.status === "OVERDUE") ? (
                         <button
@@ -764,7 +781,7 @@ export default function OwnerFinancePage() {
                               {formatDateTime(item.appointment.startAt)} | #{item.appointment.id.slice(0, 8)}
                             </p>
                             <p className="mt-1 text-xs text-[#c8d2f2]">
-                              Taxa: {formatCurrency(item.appointment.serviceFeeCents)} | Servico: {formatCurrency(item.appointment.servicePriceCents)}
+                              Taxa: {formatCurrency(item.appointment.serviceFeeCents)} | Serviço: {formatCurrency(item.appointment.servicePriceCents)}
                             </p>
                             <p className="mt-1 text-xs text-[#c8d2f2]">
                               Cliente: {item.appointment.clientUser.name} | Barbeiro: {item.appointment.barberUser.name}
@@ -781,7 +798,7 @@ export default function OwnerFinancePage() {
             })
           ) : (
             <p className="rounded-xl border border-white/10 bg-[#0a122f]/70 p-4 text-sm text-[#c6d1ef]">
-              Nenhuma fatura semanal gerada ate o momento.
+              Nenhuma fatura semanal gerada até o momento.
             </p>
           )}
         </div>
@@ -799,7 +816,7 @@ export default function OwnerFinancePage() {
               <div>
                 <p className="text-[11px] uppercase tracking-[0.1em] text-[#aeb8db]">Pagamento PIX</p>
                 <h3 className="text-xl font-semibold">Fatura semanal</h3>
-                <p className="mt-1 text-xs text-[#b7c2e8]">Escaneie o QR Code ou copie o codigo para pagar.</p>
+                <p className="mt-1 text-xs text-[#b7c2e8]">Escaneie o QR Code ou copie o Código para pagar.</p>
               </div>
               {canClosePaymentModal(paymentSession) ? (
                 <button
@@ -814,85 +831,118 @@ export default function OwnerFinancePage() {
                 </button>
               ) : null}
             </header>
-
-            <div className="mt-4 grid gap-4 md:grid-cols-[1fr_auto] md:items-start">
-              <div className="space-y-3">
-                <div className="rounded-2xl border border-white/12 bg-[#0a1331]/85 p-3 text-sm">
-                  <p className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Valor</p>
-                  <p className="mt-1 text-xl font-bold">{formatCurrency(paymentSession.amountCents)}</p>
-                  <p className="mt-2 text-xs text-[#c6d1ef]">
-                    Expira em: {paymentSession.expiresAt ? formatDateTime(paymentSession.expiresAt) : "Nao informado"}
-                  </p>
-                  <p className="mt-1 text-xs text-[#c6d1ef]">
-                    Tempo restante: {formatCountdown(paymentSession.expiresAt, countdownNowMs)}
-                  </p>
-                  <p className="mt-1 text-xs text-[#9fb0dd]">
-                    Tentativas de validacao: {paymentSession.attempts}/{MAX_POLL_ATTEMPTS}
-                  </p>
+            {paymentSession.status === "PAID" ? (
+              <div className="mt-4 rounded-2xl border border-emerald-300/35 bg-[linear-gradient(145deg,rgba(16,185,129,0.2)_0%,rgba(16,185,129,0.08)_55%,rgba(8,13,33,0.95)_100%)] p-4">
+                <div className="flex items-center gap-3">
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-emerald-200/35 bg-emerald-400/20 text-emerald-100">
+                    <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
+                      <path d="m5 12 4.2 4.2L19 6.8" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.1em] text-emerald-100/90">Tudo certo!</p>
+                    <h4 className="text-lg font-semibold text-emerald-50">Pagamento confirmado</h4>
+                    <p className="mt-1 text-sm text-emerald-100/90">
+                      Recebemos o pagamento da fatura e liberamos o financeiro automaticamente.
+                    </p>
+                  </div>
                 </div>
 
-                <div className="rounded-2xl border border-white/12 bg-[#0a1331]/85 p-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${chargeBadgeClass(paymentSession.status)}`}>
-                      {chargeStatusLabel(paymentSession.status)}
-                    </span>
-                    {paymentSession.polling ? (
-                      <span className="text-xs text-[#b7c2e8]">Aguardando pagamento...</span>
-                    ) : null}
+                <div className="mt-4 grid gap-2 rounded-xl border border-emerald-200/25 bg-[#07142c]/70 p-3 text-sm text-emerald-50 sm:grid-cols-2">
+                  <p>
+                    <span className="text-emerald-100/75">Valor:</span> {formatCurrency(paymentSession.amountCents)}
+                  </p>
+                  <p>
+                    <span className="text-emerald-100/75">Pago em:</span> {paymentSession.paidAt ? formatDateTime(paymentSession.paidAt) : "agora"}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 grid gap-4 md:grid-cols-[1fr_auto] md:items-start">
+                <div className="space-y-3">
+                  <div className="rounded-2xl border border-white/12 bg-[#0a1331]/85 p-3 text-sm">
+                    <p className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Valor</p>
+                    <p className="mt-1 text-xl font-bold">{formatCurrency(paymentSession.amountCents)}</p>
+                    <p className="mt-2 text-xs text-[#c6d1ef]">
+                      Expira em: {paymentSession.expiresAt ? formatDateTime(paymentSession.expiresAt) : "Não informado"}
+                    </p>
+                    <p className="mt-1 text-xs text-[#c6d1ef]">
+                      Tempo restante: {formatCountdown(paymentSession.expiresAt, countdownNowMs)}
+                    </p>
                   </div>
 
-                  {paymentSession.message ? (
-                    <p className="mt-2 text-xs text-[#c6d1ef]">{paymentSession.message}</p>
-                  ) : null}
+                  <div className="rounded-2xl border border-white/12 bg-[#0a1331]/85 p-3 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${chargeBadgeClass(paymentSession.status)}`}>
+                        {chargeStatusLabel(paymentSession.status)}
+                      </span>
+                      {!paymentSession.message && paymentSession.polling ? (
+                        <span className="text-xs text-[#b7c2e8]">Aguardando pagamento...</span>
+                      ) : null}
+                    </div>
 
-                  {paymentSession.paidAt ? (
-                    <p className="mt-2 text-xs text-emerald-200">Pago em {formatDateTime(paymentSession.paidAt)}</p>
-                  ) : null}
+                    {paymentSession.message ? (
+                      <p className="mt-2 text-xs text-[#c6d1ef]">{paymentSession.message}</p>
+                    ) : null}
 
-                  {paymentSession.rateLimited ? (
-                    <p className="mt-2 text-xs text-amber-100">
-                      Limite temporario ao consultar status. O polling continuou com intervalo maior.
-                    </p>
-                  ) : null}
+                    {paymentSession.rateLimited ? (
+                      <p className="mt-2 text-xs text-amber-100">
+                        Limite temporario ao consultar status. O polling continuou com intervalo maior.
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
 
-                <div className="rounded-2xl border border-white/12 bg-[#0a1331]/85 p-3">
-                  <p className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">PIX copia e cola</p>
-                  <textarea
-                    readOnly
-                    value={paymentSession.qrCodeCopyPaste}
-                    className="mt-2 h-24 w-full resize-none rounded-xl border border-white/12 bg-[#091029]/90 px-2.5 py-2 text-xs text-[#d8e3ff]"
-                  />
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                <div className="rounded-2xl border border-white/12 bg-[#0a1331]/85 p-4">
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    {paymentSession.qrCodeImageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={paymentSession.qrCodeImageUrl}
+                        alt="QR Code PIX"
+                        className="h-56 w-56 rounded-xl border border-white/15 bg-white object-contain"
+                      />
+                    ) : (
+                      <div className="flex h-56 w-56 items-center justify-center rounded-xl border border-dashed border-white/20 bg-[#091029]/80 text-xs text-[#b7c2e8]">
+                        QR Code indisponivel no momento.
+                      </div>
+                    )}
+
                     <button
                       type="button"
                       onClick={() => void copyPixCode()}
                       className="rounded-lg border border-white/20 px-3 py-1.5 text-xs font-semibold text-[#d8e3ff] transition hover:bg-white/10"
                     >
-                      Copiar codigo PIX
+                      Copiar Código PIX
                     </button>
                     {copyFeedback ? <span className="text-xs text-[#b7c2e8]">{copyFeedback}</span> : null}
                   </div>
                 </div>
               </div>
-
-              <div className="rounded-2xl border border-white/12 bg-[#0a1331]/85 p-3">
-                {paymentSession.qrCodeImageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={paymentSession.qrCodeImageUrl}
-                    alt="QR Code PIX"
-                    className="h-56 w-56 rounded-xl border border-white/15 bg-white object-contain"
-                  />
-                ) : (
-                  <div className="flex h-56 w-56 items-center justify-center rounded-xl border border-dashed border-white/20 bg-[#091029]/80 text-xs text-[#b7c2e8]">
-                    QR Code indisponivel no momento.
-                  </div>
-                )}
-              </div>
-            </div>
+            )}
 
             <div className="mt-4 flex flex-wrap justify-end gap-2">
+              {paymentSession.status !== "PAID" ? (
+                <button
+                  type="button"
+                  onClick={deferPaymentModal}
+                  className="rounded-lg border border-white/20 px-3 py-1.5 text-xs font-semibold text-[#d8e3ff] transition hover:bg-white/10"
+                >
+                  Voltar e pagar depois
+                </button>
+              ) : null}
+
+              {(paymentSession.status === "PENDING" || paymentSession.status === "UNKNOWN") ? (
+                <button
+                  type="button"
+                  onClick={() => void validatePaymentNow()}
+                  disabled={validatingPayment}
+                  className="rounded-lg border border-white/20 px-3 py-1.5 text-xs font-semibold text-[#d8e3ff] transition hover:bg-white/10 disabled:opacity-70"
+                >
+                  {validatingPayment ? "Validando..." : "Já efetuei o pagamento"}
+                </button>
+              ) : null}
+
               {(paymentSession.timeoutReached || paymentSession.status === "EXPIRED") ? (
                 <button
                   type="button"

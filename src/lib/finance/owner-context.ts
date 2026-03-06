@@ -1,4 +1,4 @@
-import { requireAuth } from "@/lib/auth/require-auth"
+﻿import { requireAuth } from "@/lib/auth/require-auth"
 import { resolveOwnerBarbershopId } from "@/lib/membership/resolve-owner-barbershop"
 
 export type OwnerFinanceContext =

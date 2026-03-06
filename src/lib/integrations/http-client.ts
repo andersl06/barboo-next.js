@@ -1,4 +1,4 @@
-export class IntegrationHttpError extends Error {
+﻿export class IntegrationHttpError extends Error {
   constructor(
     message: string,
     public readonly status?: number

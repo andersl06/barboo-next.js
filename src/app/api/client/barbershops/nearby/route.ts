@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client"
+﻿import { Prisma } from "@prisma/client"
 import { requireAuth } from "@/lib/auth/require-auth"
 import { prisma } from "@/lib/db/prisma"
 import { failure, success } from "@/lib/http/api-response"
@@ -107,13 +107,13 @@ export async function GET(req: Request) {
     ) {
       return failure(
         "CLIENT_LOCATION_REQUIRED",
-        "Ative e salve sua localizacao para buscar barbearias proximas.",
+        "Ative e salve Sua localização para buscar barbearias Próximas.",
         403,
         [
           {
             field: "location",
             message:
-              "Localizacao obrigatoria para busca por proximidade. Acesse por link direto para continuar sem localizacao.",
+              "Localização obrigatória para busca por proximidade. Acesse por link direto para continuar sem Localização.",
           },
         ]
       )
@@ -129,7 +129,7 @@ export async function GET(req: Request) {
       limitParam < 1 ||
       limitParam > 50
     ) {
-      return failure("VALIDATION_ERROR", "Parametro limit invalido.", 400, [
+      return failure("VALIDATION_ERROR", "parâmetro limit inválido.", 400, [
         {
           field: "limit",
           message: "Use um inteiro entre 1 e 50.",
@@ -142,7 +142,7 @@ export async function GET(req: Request) {
       radiusParam < 1 ||
       radiusParam > 100
     ) {
-      return failure("VALIDATION_ERROR", "Parametro radiusKm invalido.", 400, [
+      return failure("VALIDATION_ERROR", "parâmetro radiusKm inválido.", 400, [
         {
           field: "radiusKm",
           message: "Use um valor entre 1 e 100 km.",

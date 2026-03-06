@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import BarberEditPage from "@/app/barber/edit/page"
 

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -31,14 +31,14 @@ function translateError(result: Extract<ApiResult<ResetPasswordResponse>, { succ
   }
 
   if (result.code === "RESET_TOKEN_INVALID_OR_EXPIRED") {
-    return "Seu link de recuperacao e invalido ou expirou."
+    return "Seu link de recuperação e inválido ou expirou."
   }
 
   if (result.code === "TOO_MANY_ATTEMPTS" || result.code === "RATE_LIMIT") {
     return "Muitas tentativas. Aguarde alguns minutos para tentar novamente."
   }
 
-  return result.message || "Nao foi possivel redefinir a senha."
+  return result.message || "Não foi possível redefinir a senha."
 }
 
 export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
@@ -57,17 +57,17 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
     setSuccessMessage(null)
 
     if (!hasToken || !token) {
-      setError("Token de recuperacao ausente ou invalido.")
+      setError("Token de recuperação ausente ou inválido.")
       return
     }
 
     if (password.length < 6) {
-      setError("A senha precisa ter no minimo 6 caracteres.")
+      setError("A senha precisa ter no mínimo 6 caracteres.")
       return
     }
 
     if (password !== confirmPassword) {
-      setError("A confirmacao de senha nao confere.")
+      setError("A Confirmação de senha não confere.")
       return
     }
 
@@ -96,7 +96,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
         router.replace("/login?reset=1")
       }, 700)
     } catch {
-      setError("Falha de conexao. Tente novamente.")
+      setError("Falha de conexão. Tente novamente.")
     } finally {
       setLoading(false)
     }
@@ -106,7 +106,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
     return (
       <div className="space-y-4">
         <p className="rounded-xl border border-red-300/35 bg-red-500/12 px-3.5 py-2.5 text-sm text-red-100">
-          O link de recuperacao e invalido ou incompleto.
+          O link de recuperação e inválido ou incompleto.
         </p>
         <p className="text-sm text-[#a8b3d9]">
           Solicite um novo link em{" "}
@@ -141,7 +141,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
           className={inputClassName}
           type="password"
           value={password}
-          placeholder="Minimo de 6 caracteres"
+          placeholder="mínimo de 6 caracteres"
           onChange={(event) => setPassword(event.target.value)}
           minLength={6}
           required

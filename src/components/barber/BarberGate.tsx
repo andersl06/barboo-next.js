@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { UIButton } from "@/components/ui/UIButton"
@@ -21,7 +21,7 @@ export function BarberGate({ state, error }: BarberGateProps) {
   if (state === "must_change_password") {
     return (
       <section className="rounded-2xl border border-white/12 bg-[#0b1330]/80 p-5 text-center">
-        <p className="text-[#d0d7ef]">Voce precisa trocar sua senha para continuar.</p>
+        <p className="text-[#d0d7ef]">Você precisa trocar sua senha para continuar.</p>
         <div className="mt-4">
           <UIButton href="/barber/change-password">Ir para troca de senha</UIButton>
         </div>
@@ -32,7 +32,7 @@ export function BarberGate({ state, error }: BarberGateProps) {
   if (state === "unauthenticated") {
     return (
       <section className="rounded-2xl border border-white/12 bg-[#0b1330]/80 p-5 text-center">
-        <p className="text-[#d0d7ef]">Voce precisa fazer login para acessar essa area.</p>
+        <p className="text-[#d0d7ef]">Você precisa fazer login para acessar essa area.</p>
         {error ? <p className="mt-2 text-sm text-red-200">{error}</p> : null}
         <div className="mt-4">
           <UIButton href="/login?next=%2Fbarber%2Fdashboard">Ir para login</UIButton>

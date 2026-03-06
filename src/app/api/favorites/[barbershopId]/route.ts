@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client"
+﻿import { Prisma } from "@prisma/client"
 import { z } from "zod"
 import { requireAuth } from "@/lib/auth/require-auth"
 import { prisma } from "@/lib/db/prisma"
@@ -8,7 +8,7 @@ import { handleError } from "@/lib/http/error-handler"
 import { rateLimit } from "@/lib/security/rate-limit"
 
 const paramsSchema = z.object({
-  barbershopId: z.string().uuid("barbershopId invalido."),
+  barbershopId: z.string().uuid("barbershopId inválido."),
 })
 
 function isFavoritesSchemaOutdatedError(err: unknown) {
@@ -55,7 +55,7 @@ export async function DELETE(
     if (!parsedParams.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de validacao",
+        "Erro de Validação",
         400,
         parsedParams.error.issues.map((issue) => ({
           field:

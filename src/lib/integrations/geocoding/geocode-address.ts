@@ -1,4 +1,4 @@
-import { BARBERSHOP_ERRORS } from "@/lib/errors/barbershop-errors"
+﻿import { BARBERSHOP_ERRORS } from "@/lib/errors/barbershop-errors"
 import { fetchJson } from "@/lib/integrations/http-client"
 
 export type GeocodeInput = {

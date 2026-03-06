@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { OwnerGate } from "@/components/owner/OwnerGate"
@@ -131,7 +131,7 @@ export default function OwnerAvailabilityPage() {
         setSchedule(normalizeWeeklySchedule(preferred.weeklySchedule))
       }
     } catch {
-      setError("Falha de conexao ao carregar agenda da equipe.")
+      setError("Falha de conexão ao carregar agenda da equipe.")
     } finally {
       setLoading(false)
     }
@@ -177,7 +177,7 @@ export default function OwnerAvailabilityPage() {
       setInfo("Agenda semanal atualizada com sucesso.")
       await loadMembers()
     } catch {
-      setError("Falha de conexao ao salvar agenda.")
+      setError("Falha de conexão ao salvar agenda.")
     } finally {
       setSaving(false)
     }
@@ -187,7 +187,7 @@ export default function OwnerAvailabilityPage() {
     return (
       <OwnerShell
         title="Disponibilidade"
-        subtitle="Configure os horarios de atendimento da equipe."
+        subtitle="Configure os Horários de atendimento da equipe."
         activePath="/owner/availability"
         statusLabel={barbershopStatus}
       >

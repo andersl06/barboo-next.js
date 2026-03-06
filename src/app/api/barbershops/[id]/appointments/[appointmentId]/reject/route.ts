@@ -1,4 +1,4 @@
-import { requireAuth } from "@/lib/auth/require-auth"
+﻿import { requireAuth } from "@/lib/auth/require-auth"
 import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"
 import { prisma } from "@/lib/db/prisma"
 import { APPOINTMENT_ERRORS } from "@/lib/errors/appointment-errors"
@@ -47,7 +47,7 @@ export async function PATCH(
     if (membership.role === "BARBER" && auth.user.id !== appointment.barberUserId) {
       return failure(
         APPOINTMENT_ERRORS.FORBIDDEN_CONFIRM.code,
-        "Voce nao tem permissao para recusar este agendamento.",
+        "Você não tem permissão para recusar este agendamento.",
         403
       )
     }

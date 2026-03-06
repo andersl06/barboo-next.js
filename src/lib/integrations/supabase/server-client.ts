@@ -1,4 +1,4 @@
-export type SupabaseServerConfig = {
+﻿export type SupabaseServerConfig = {
   url: string
   serviceRoleKey: string
 }

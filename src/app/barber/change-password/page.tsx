@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { FormEvent, useState } from "react"
 import { useRouter } from "next/navigation"
@@ -32,10 +32,10 @@ function translateError(result: Extract<ApiResult<ChangePasswordData>, { success
   if (first) return first
 
   if (result.code === "TEMP_TOKEN_INVALID" || result.code === "UNAUTHORIZED") {
-    return "Sessao de primeiro acesso invalida ou expirada. Faca login novamente."
+    return "Sessão de primeiro acesso inválida ou expirada. Faça login novamente."
   }
 
-  return result.message || "Nao foi possivel atualizar sua senha."
+  return result.message || "Não foi possível atualizar sua senha."
 }
 
 export default function BarberChangePasswordPage() {
@@ -52,18 +52,18 @@ export default function BarberChangePasswordPage() {
     setSuccessMessage(null)
 
     if (newPassword.trim().length < 6) {
-      setError("A nova senha precisa ter no minimo 6 caracteres.")
+      setError("A nova senha precisa ter no mínimo 6 caracteres.")
       return
     }
 
     if (newPassword !== confirmPassword) {
-      setError("A confirmacao de senha nao confere.")
+      setError("A Confirmação de senha não confere.")
       return
     }
 
     const tempToken = getTempToken()
     if (!tempToken) {
-      setError("Sessao de primeiro acesso nao encontrada. Faca login novamente.")
+      setError("Sessão de primeiro acesso não encontrada. Faça login novamente.")
       return
     }
 
@@ -93,7 +93,7 @@ export default function BarberChangePasswordPage() {
         router.replace("/barber/dashboard")
       }, 600)
     } catch {
-      setError("Falha de conexao ao alterar senha.")
+      setError("Falha de conexão ao alterar senha.")
     } finally {
       setLoading(false)
     }
@@ -102,7 +102,7 @@ export default function BarberChangePasswordPage() {
   return (
     <BarberShell
       title="Defina sua nova senha"
-      subtitle="Para continuar usando o sistema, voce precisa criar uma nova senha."
+      subtitle="Para continuar usando o sistema, Você precisa criar uma nova senha."
       activePath="/barber/change-password"
       hideNavigation
     >

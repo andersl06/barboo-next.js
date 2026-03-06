@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client"
+﻿import { Prisma } from "@prisma/client"
 import { z } from "zod"
 import { requireAuth } from "@/lib/auth/require-auth"
 import { prisma } from "@/lib/db/prisma"
@@ -8,7 +8,7 @@ import { handleError } from "@/lib/http/error-handler"
 import { rateLimit } from "@/lib/security/rate-limit"
 
 const favoritePayloadSchema = z.object({
-  barbershopId: z.string().uuid("barbershopId invalido."),
+  barbershopId: z.string().uuid("barbershopId inválido."),
 })
 
 function haversineDistanceKm(
@@ -242,7 +242,7 @@ export async function POST(req: Request) {
     if (!parsed.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de validacao",
+        "Erro de Validação",
         400,
         parsed.error.issues.map((issue) => ({
           field:
@@ -265,7 +265,7 @@ export async function POST(req: Request) {
     })
 
     if (!barbershop) {
-      return failure("BARBERSHOP_NOT_FOUND", "Barbearia nao encontrada.", 404)
+      return failure("BARBERSHOP_NOT_FOUND", "Barbearia não encontrada.", 404)
     }
 
     await prisma.favoriteBarbershop.upsert({

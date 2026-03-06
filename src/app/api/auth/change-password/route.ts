@@ -1,4 +1,4 @@
-import { setAccessSessionCookies } from "@/lib/auth/session-cookies"
+﻿import { setAccessSessionCookies } from "@/lib/auth/session-cookies"
 import { requireTempAuth } from "@/lib/auth/require-temp-auth"
 import { prisma } from "@/lib/db/prisma"
 import { AUTH_ERRORS } from "@/lib/errors/auth-errors"
@@ -24,7 +24,7 @@ export async function PATCH(req: Request) {
     if (!parsed.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de validacao",
+        "Erro de Validação",
         400,
         parsed.error.issues.map((issue) => ({
           field:

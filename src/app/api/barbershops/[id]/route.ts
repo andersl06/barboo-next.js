@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client"
+﻿import { Prisma } from "@prisma/client"
 import { z } from "zod"
 import { requireAuth } from "@/lib/auth/require-auth"
 import { requireActiveBarbershop } from "@/lib/barbershop/require-active-barbershop"
@@ -34,35 +34,35 @@ function asOptionalTrimmed(value: unknown) {
 }
 
 const barbershopUpdateSchema = z.object({
-  name: z.string().trim().min(3, "Nome deve ter no minimo 3 caracteres.").max(30, "Nome deve ter no maximo 30 caracteres."),
+  name: z.string().trim().min(3, "Nome deve ter no mínimo 3 caracteres.").max(30, "Nome deve ter no máximo 30 caracteres."),
   description: z.preprocess(
     asOptionalTrimmed,
-    z.string().max(500, "Descricao deve ter no maximo 500 caracteres.").optional()
+    z.string().max(500, "Descrição deve ter no máximo 500 caracteres.").optional()
   ),
-  phone: z.string().trim().min(8, "Telefone invalido.").max(20, "Telefone invalido."),
-  address: z.string().trim().min(3, "Endereco invalido.").max(120, "Endereco deve ter no maximo 120 caracteres."),
-  addressNumber: z.string().trim().min(1, "Numero obrigatorio.").max(20, "Numero deve ter no maximo 20 caracteres."),
-  neighborhood: z.string().trim().min(2, "Bairro invalido.").max(60, "Bairro deve ter no maximo 60 caracteres."),
-  city: z.string().trim().min(2, "Cidade invalida.").max(60, "Cidade deve ter no maximo 60 caracteres."),
+  phone: z.string().trim().min(8, "Telefone inválido.").max(20, "Telefone inválido."),
+  address: z.string().trim().min(3, "Endereço inválido.").max(120, "Endereço deve ter no máximo 120 caracteres."),
+  addressNumber: z.string().trim().min(1, "Numero obrigatório.").max(20, "Numero deve ter no máximo 20 caracteres."),
+  neighborhood: z.string().trim().min(2, "Bairro inválido.").max(60, "Bairro deve ter no máximo 60 caracteres."),
+  city: z.string().trim().min(2, "Cidade inválida.").max(60, "Cidade deve ter no máximo 60 caracteres."),
   state: z
     .string()
     .trim()
     .toUpperCase()
-    .regex(/^[A-Z]{2}$/, "UF invalida."),
+    .regex(/^[A-Z]{2}$/, "UF inválida."),
   zipCode: z
     .string()
     .trim()
-    .regex(/^\d{5}-?\d{3}$/, "CEP invalido.")
+    .regex(/^\d{5}-?\d{3}$/, "CEP inválido.")
     .transform((value) => value.replace(/\D/g, "")),
   slug: z.preprocess(
     asOptionalTrimmed,
-    z.string().max(80, "Slug deve ter no maximo 80 caracteres.").optional()
+    z.string().max(80, "Slug deve ter no máximo 80 caracteres.").optional()
   ),
   cnpj: z.preprocess(
     asOptionalTrimmed,
     z
       .string()
-      .refine((value) => value.replace(/\D/g, "").length === 14, "CNPJ invalido.")
+      .refine((value) => value.replace(/\D/g, "").length === 14, "CNPJ inválido.")
       .optional()
   ),
 })
@@ -117,7 +117,7 @@ export async function GET(
     })
 
     if (!barbershop) {
-      return failure("BARBERSHOP_NOT_FOUND", "Barbearia nao encontrada.", 404)
+      return failure("BARBERSHOP_NOT_FOUND", "Barbearia não encontrada.", 404)
     }
 
     return success({
@@ -156,7 +156,7 @@ export async function PATCH(
     if (!parsed.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de validacao",
+        "Erro de Validação",
         400,
         parsed.error.issues.map((issue) => ({
           field:
@@ -171,8 +171,8 @@ export async function PATCH(
     const payload = parsed.data
     const normalizedSlug = slugify(payload.slug ?? payload.name)
     if (!normalizedSlug) {
-      return failure("VALIDATION_ERROR", "Slug invalido.", 400, [
-        { field: "slug", message: "Slug invalido." },
+      return failure("VALIDATION_ERROR", "Slug inválido.", 400, [
+        { field: "slug", message: "Slug inválido." },
       ])
     }
 
@@ -244,7 +244,7 @@ export async function PATCH(
     })
   } catch (err) {
     if (isUniqueConstraintError(err)) {
-      return failure("CONFLICT", "Slug ou CNPJ ja em uso.", 409)
+      return failure("CONFLICT", "Slug ou CNPJ Já em uso.", 409)
     }
 
     return handleError(err)
