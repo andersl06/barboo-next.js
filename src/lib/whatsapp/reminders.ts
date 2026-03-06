@@ -1,24 +1,16 @@
 const WHATSAPP_REMINDER_PHONE = "5521971878085"
-const BUSINESS_TIMEZONE = "America/Sao_Paulo"
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
 
 export type WhatsappReminderPayload = {
-  barbershopName: string
-  serviceName: string
+  barbershopName?: string
+  serviceName?: string
   barberName?: string | null
-  appointmentStartAt: string | Date
+  appointmentStartAt?: string | Date
+  appointmentId?: string
 }
 
 function toDate(value: string | Date) {
   return value instanceof Date ? value : new Date(value)
-}
-
-function formatDateTime(value: Date) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
-    timeZone: BUSINESS_TIMEZONE,
-  }).format(value)
 }
 
 export function isWithinNext24h(dateTime: string | Date, now = new Date()) {
@@ -30,13 +22,9 @@ export function isWithinNext24h(dateTime: string | Date, now = new Date()) {
 }
 
 export function buildWhatsappReminderLink(payload: WhatsappReminderPayload) {
-  const date = toDate(payload.appointmentStartAt)
-  const formattedDate = Number.isNaN(date.getTime())
-    ? payload.appointmentStartAt.toString()
-    : formatDateTime(date)
-
   const lines = [
-    "Olá! Quero ativar lembretes e atualizações sobre meu agendamento no Barboo.",
+    "Olá! Quero ativar lembretes e atualizações sobre meu compromisso no Barboo.",
+    payload.appointmentId ? `ID: ${payload.appointmentId}` : null,
   ].filter(Boolean)
 
   const text = lines.join("\n")

@@ -291,6 +291,32 @@ model FavoriteBarbershop {
   @@map("favorite_barbershops")
 }
 
+model WhatsAppContact {
+  id            String   @id @default(uuid())
+  waId          String   @unique @db.VarChar(32)
+  lastInboundAt DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([lastInboundAt])
+  @@map("whatsapp_contacts")
+}
+
+model WhatsAppInboundMessage {
+  id          String   @id @default(uuid())
+  waId        String   @db.VarChar(32)
+  messageId   String   @unique @db.VarChar(120)
+  type        String?  @db.VarChar(40)
+  bodyPreview String?  @db.VarChar(200)
+  receivedAt  DateTime
+  raw         Json?
+  createdAt   DateTime @default(now())
+
+  @@index([waId, receivedAt])
+  @@index([receivedAt])
+  @@map("whatsapp_inbound_messages")
+}
+
 enum MembershipRole {
   OWNER
   BARBER
