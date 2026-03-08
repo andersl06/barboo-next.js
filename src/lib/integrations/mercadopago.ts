@@ -141,9 +141,13 @@ async function callMercadoPago<T>(path: string, init: RequestInit): Promise<T> {
   }
 
   if (!response.ok) {
-    const message =
-      (parsed && typeof parsed === "object" && asString((parsed as Record<string, unknown>).message)) ??
-      "Falha ao chamar Mercado Pago."
+    const message = (() => {
+      if (parsed && typeof parsed === "object") {
+        const parsedMessage = asString((parsed as Record<string, unknown>).message)
+        if (parsedMessage) return parsedMessage
+      }
+      return "Falha ao chamar Mercado Pago."
+    })()
     throw new MercadoPagoError(message, {
       code: "HTTP_ERROR",
       status: response.status,
