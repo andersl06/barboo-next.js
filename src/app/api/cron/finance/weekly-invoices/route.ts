@@ -2,19 +2,14 @@ import { prisma } from "@/lib/db/prisma"
 import { markPastConfirmedAppointmentsAsCompleted } from "@/lib/finance/appointments"
 import { generateWeeklyInvoiceForBarbershop } from "@/lib/finance/generate-weekly-invoice"
 import { refreshBarbershopFinancialState } from "@/lib/finance/invoices"
-import { success, failure } from "@/lib/http/api-response"
+import { verifySignatureAppRouter } from "@upstash/qstash/nextjs"
+import { success } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
-import { requireCronAuth } from "@/lib/http/require-cron"
 
 const MAX_INVOICE_CYCLES = 8
 
-export async function POST(req: Request) {
+async function handler(_req: Request) {
   try {
-    const auth = await requireCronAuth(req)
-    if (!auth.ok) {
-      return failure("FORBIDDEN", auth.message, auth.status)
-    }
-
     const barbershops = await prisma.barbershop.findMany({
       select: { id: true },
     })
@@ -56,3 +51,5 @@ export async function POST(req: Request) {
     return handleError(err)
   }
 }
+
+export const POST = verifySignatureAppRouter(handler)
