@@ -23,16 +23,46 @@ function resolveQstashKeys() {
   return { current, next }
 }
 
-function resolveExpectedSubject(req: Request) {
-  const url = new URL(req.url)
-  return `${url.origin}${url.pathname}`
-}
-
 function hashBody(rawBody: string) {
   return crypto.createHash("sha256").update(rawBody).digest("base64url")
 }
 
-function verifyQstashToken(token: string, key: string, expectedSubject: string, expectedBodyHash: string) {
+function resolveAllowedHosts(req: Request) {
+  const hosts = new Set<string>()
+  const requestUrl = new URL(req.url)
+  hosts.add(requestUrl.host)
+
+  const appUrl = process.env.APP_URL?.trim()
+  if (appUrl) {
+    try {
+      const origin = new URL(appUrl).origin
+      const parsedOrigin = new URL(origin)
+      const hostname = parsedOrigin.hostname
+      const hasWww = hostname.startsWith("www.")
+      const alternateHostname = hasWww ? hostname.slice(4) : `www.${hostname}`
+      hosts.add(parsedOrigin.host)
+      hosts.add(`${alternateHostname}${parsedOrigin.port ? `:${parsedOrigin.port}` : ""}`)
+    } catch {
+      // ignore invalid APP_URL
+    }
+  }
+
+  return hosts
+}
+
+function isAllowedSubject(subject: string, req: Request) {
+  try {
+    const subjectUrl = new URL(subject)
+    const requestUrl = new URL(req.url)
+    if (subjectUrl.pathname !== requestUrl.pathname) return false
+    const allowedHosts = resolveAllowedHosts(req)
+    return allowedHosts.has(subjectUrl.host)
+  } catch {
+    return false
+  }
+}
+
+function verifyQstashToken(token: string, key: string, req: Request, expectedBodyHash: string) {
   const payload = jwt.verify(token, key, {
     algorithms: ["HS256"],
     clockTolerance: 10,
@@ -40,7 +70,7 @@ function verifyQstashToken(token: string, key: string, expectedSubject: string, 
 
   if (!payload || typeof payload !== "object") return false
   if (payload.iss !== "Upstash") return false
-  if (!payload.sub || payload.sub !== expectedSubject) return false
+  if (!payload.sub || !isAllowedSubject(payload.sub, req)) return false
   if (typeof payload.body !== "string") return false
   return safeEqual(payload.body, expectedBodyHash)
 }
@@ -56,14 +86,13 @@ async function verifyQstashSignature(req: Request) {
   }
 
   const rawBody = await req.text()
-  const expectedSubject = resolveExpectedSubject(req)
   const expectedBodyHash = hashBody(rawBody)
 
   try {
-    if (keys.current && verifyQstashToken(signature, keys.current, expectedSubject, expectedBodyHash)) {
+    if (keys.current && verifyQstashToken(signature, keys.current, req, expectedBodyHash)) {
       return { ok: true, authType: "qstash" as const }
     }
-    if (keys.next && verifyQstashToken(signature, keys.next, expectedSubject, expectedBodyHash)) {
+    if (keys.next && verifyQstashToken(signature, keys.next, req, expectedBodyHash)) {
       return { ok: true, authType: "qstash" as const }
     }
   } catch {
