@@ -1,7 +1,7 @@
 import { PremiumBackground } from "@/components/background"
 import { UIButton } from "@/components/ui/UIButton"
 
-const LAST_UPDATED = "8 de março de 2026"
+const LAST_UPDATED = "Março de 2026"
 
 export default function PrivacyPolicyPage() {
   return (
@@ -103,6 +103,13 @@ export default function PrivacyPolicyPage() {
               <h2 className="text-lg font-semibold text-[#f4f6ff]">
                 3. Como utilizamos os dados
               </h2>
+              <p className="mt-3">
+                O tratamento de dados pessoais pode ocorrer com base no
+                consentimento do usuário, na execução de contrato (prestação do
+                serviço de agendamento), no cumprimento de obrigações legais ou
+                no legítimo interesse para funcionamento e segurança da
+                plataforma.
+              </p>
               <ul className="mt-4 list-disc space-y-2 pl-5">
                 <li>
                   Criar e gerenciar contas, autenticar acessos e manter sessões.
@@ -180,9 +187,18 @@ export default function PrivacyPolicyPage() {
                 7. Direitos do usuário
               </h2>
               <p className="mt-3">
-                Você pode solicitar acesso, correção, atualização ou exclusão
-                dos seus dados pessoais. Esses pedidos devem ser encaminhados
-                pelo canal oficial de suporte do Barboo.
+                Você pode solicitar:
+              </p>
+              <ul className="mt-4 list-disc space-y-2 pl-5">
+                <li>Acesso aos seus dados pessoais.</li>
+                <li>Correção de dados incompletos, inexatos ou desatualizados.</li>
+                <li>Solicitação de exclusão de dados, quando aplicável.</li>
+                <li>Anonimização ou bloqueio de dados, quando aplicável.</li>
+                <li>Portabilidade dos dados, quando tecnicamente possível.</li>
+              </ul>
+              <p className="mt-4">
+                Esses pedidos podem ser encaminhados pelo canal oficial de
+                suporte do Barboo.
               </p>
             </section>
 
@@ -203,9 +219,21 @@ export default function PrivacyPolicyPage() {
                 9. Contato
               </h2>
               <p className="mt-3">
-                Para questões de privacidade, utilize o canal de suporte oficial
-                do Barboo. Informações de contato atualizadas podem ser
-                encontradas no site ou no aplicativo.
+                Para questões de privacidade, entre em contato pelo e-mail
+                `privacidade@barboo.com.br` ou pelo suporte oficial da
+                plataforma.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-semibold text-[#f4f6ff]">
+                10. Alterações nesta Política
+              </h2>
+              <p className="mt-3">
+                O Barboo pode atualizar esta Política de Privacidade
+                periodicamente para refletir melhorias na plataforma, mudanças
+                legais ou operacionais. Quando isso ocorrer, a data de "Última
+                atualização" será revisada nesta página.
               </p>
             </section>
           </div>
