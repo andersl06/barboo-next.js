@@ -14,21 +14,10 @@ export async function GET(req: Request) {
     }
 
     await markPastConfirmedAppointmentsAsCompleted(context.barbershopId)
-<<<<<<< ours
-<<<<<<< ours
-    await generateWeeklyInvoiceForBarbershop({
-      barbershopId: context.barbershopId,
-=======
-=======
->>>>>>> theirs
     const previousWeekReferenceDate = addBusinessDays(getCurrentBusinessDate(), -7)
     await generateWeeklyInvoiceForBarbershop({
       barbershopId: context.barbershopId,
       week: previousWeekReferenceDate,
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
     })
     await refreshBarbershopFinancialState(context.barbershopId)
 

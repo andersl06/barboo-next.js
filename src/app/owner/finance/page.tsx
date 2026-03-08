@@ -848,69 +848,9 @@ export default function OwnerFinancePage() {
                   </div>
                 </div>
 
-<<<<<<< ours
                 <div className="mt-4 grid gap-2 rounded-xl border border-emerald-200/25 bg-[#07142c]/70 p-3 text-sm text-emerald-50 sm:grid-cols-2">
                   <p>
                     <span className="text-emerald-100/75">Valor:</span> {formatCurrency(paymentSession.amountCents)}
-=======
-            {paymentSession.status === "PAID" ? (
-              <div className="mt-4 rounded-2xl border border-emerald-300/35 bg-[linear-gradient(145deg,rgba(16,185,129,0.2)_0%,rgba(16,185,129,0.08)_55%,rgba(8,13,33,0.95)_100%)] p-4">
-                <div className="flex items-center gap-3">
-                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-emerald-200/35 bg-emerald-400/20 text-emerald-100">
-                    <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
-                      <path d="m5 12 4.2 4.2L19 6.8" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-[11px] uppercase tracking-[0.1em] text-emerald-100/90">Tudo certo!</p>
-                    <h4 className="text-lg font-semibold text-emerald-50">Pagamento confirmado</h4>
-                    <p className="mt-1 text-sm text-emerald-100/90">
-                      Recebemos o pagamento da fatura e liberamos o financeiro automaticamente.
-                    </p>
-                  </div>
-                </div>
-
-<<<<<<< ours
-=======
-            {paymentSession.status === "PAID" ? (
-              <div className="mt-4 rounded-2xl border border-emerald-300/35 bg-[linear-gradient(145deg,rgba(16,185,129,0.2)_0%,rgba(16,185,129,0.08)_55%,rgba(8,13,33,0.95)_100%)] p-4">
-                <div className="flex items-center gap-3">
-                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-emerald-200/35 bg-emerald-400/20 text-emerald-100">
-                    <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
-                      <path d="m5 12 4.2 4.2L19 6.8" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-[11px] uppercase tracking-[0.1em] text-emerald-100/90">Tudo certo!</p>
-                    <h4 className="text-lg font-semibold text-emerald-50">Pagamento confirmado</h4>
-                    <p className="mt-1 text-sm text-emerald-100/90">
-                      Recebemos o pagamento da fatura e liberamos o financeiro automaticamente.
-                    </p>
-                  </div>
-                </div>
-
->>>>>>> theirs
-                <div className="mt-4 grid gap-2 rounded-xl border border-emerald-200/25 bg-[#07142c]/70 p-3 text-sm text-emerald-50 sm:grid-cols-2">
-                  <p>
-                    <span className="text-emerald-100/75">Valor:</span> {formatCurrency(paymentSession.amountCents)}
-                  </p>
-                  <p>
-                    <span className="text-emerald-100/75">Pago em:</span> {paymentSession.paidAt ? formatDateTime(paymentSession.paidAt) : "agora"}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="mt-4 grid gap-4 md:grid-cols-[1fr_auto] md:items-start">
-                <div className="space-y-3">
-                <div className="rounded-2xl border border-white/12 bg-[#0a1331]/85 p-3 text-sm">
-                  <p className="text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Valor</p>
-                  <p className="mt-1 text-xl font-bold">{formatCurrency(paymentSession.amountCents)}</p>
-                  <p className="mt-2 text-xs text-[#c6d1ef]">
-                    Expira em: {paymentSession.expiresAt ? formatDateTime(paymentSession.expiresAt) : "Nao informado"}
-                  </p>
-                  <p className="mt-1 text-xs text-[#c6d1ef]">
-                    Tempo restante: {formatCountdown(paymentSession.expiresAt, countdownNowMs)}
->>>>>>> theirs
                   </p>
                   <p>
                     <span className="text-emerald-100/75">Pago em:</span> {paymentSession.paidAt ? formatDateTime(paymentSession.paidAt) : "agora"}
@@ -978,37 +918,10 @@ export default function OwnerFinancePage() {
                     {copyFeedback ? <span className="text-xs text-[#b7c2e8]">{copyFeedback}</span> : null}
                   </div>
                 </div>
-<<<<<<< ours
-<<<<<<< ours
-=======
-=======
->>>>>>> theirs
-                </div>
-
-                <div className="rounded-2xl border border-white/12 bg-[#0a1331]/85 p-3">
-                  {paymentSession.qrCodeImageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={paymentSession.qrCodeImageUrl}
-                      alt="QR Code PIX"
-                      className="h-56 w-56 rounded-xl border border-white/15 bg-white object-contain"
-                    />
-                  ) : (
-                    <div className="flex h-56 w-56 items-center justify-center rounded-xl border border-dashed border-white/20 bg-[#091029]/80 text-xs text-[#b7c2e8]">
-                      QR Code indisponivel no momento.
-                    </div>
-                  )}
-                </div>
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
               </div>
             )}
 
             <div className="mt-4 flex flex-wrap justify-end gap-2">
-<<<<<<< ours
-<<<<<<< ours
               {paymentSession.status !== "PAID" ? (
                 <button
                   type="button"
@@ -1029,20 +942,6 @@ export default function OwnerFinancePage() {
                   {validatingPayment ? "Validando..." : "Já efetuei o pagamento"}
                 </button>
               ) : null}
-=======
-=======
->>>>>>> theirs
-              <button
-                type="button"
-                onClick={deferPaymentModal}
-                className="rounded-lg border border-white/20 px-3 py-1.5 text-xs font-semibold text-[#d8e3ff] transition hover:bg-white/10"
-              >
-                Voltar e pagar depois
-              </button>
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
 
               {(paymentSession.timeoutReached || paymentSession.status === "EXPIRED") ? (
                 <button

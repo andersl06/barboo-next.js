@@ -47,9 +47,13 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const isEmail = login.includes("@")
-    const user = await prisma.user.findUnique({
-      where: isEmail ? { email: login } : { phone: login },
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: login },
+          { phone: login },
+        ],
+      },
     })
 
     if (!user || user.status !== "ACTIVE") {

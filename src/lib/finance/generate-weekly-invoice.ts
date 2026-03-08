@@ -1,6 +1,4 @@
-<<<<<<< ours
-<<<<<<< ours
-﻿import { prisma } from "@/lib/db/prisma"
+import { prisma } from "@/lib/db/prisma"
 import {
   addBusinessDays,
   buildWeeklyPeriodFromStart,
@@ -8,14 +6,6 @@ import {
   parseBusinessDateToUtc,
   toBusinessDate,
 } from "@/lib/finance/invoices"
-=======
-import { prisma } from "@/lib/db/prisma"
-import { getWeeklyPeriod, parseBusinessDateToUtc } from "@/lib/finance/invoices"
->>>>>>> theirs
-=======
-import { prisma } from "@/lib/db/prisma"
-import { getWeeklyPeriod, parseBusinessDateToUtc } from "@/lib/finance/invoices"
->>>>>>> theirs
 
 type GenerateWeeklyInvoiceParams = {
   barbershopId: string
@@ -26,8 +16,6 @@ export async function generateWeeklyInvoiceForBarbershop({
   barbershopId,
   week,
 }: GenerateWeeklyInvoiceParams) {
-<<<<<<< ours
-<<<<<<< ours
   const anchorAppointment = await prisma.barbershopAppointment.findFirst({
     where: {
       barbershopId,
@@ -78,12 +66,6 @@ export async function generateWeeklyInvoiceForBarbershop({
       invoice: null,
     }
   }
-=======
-  const period = getWeeklyPeriod(week)
->>>>>>> theirs
-=======
-  const period = getWeeklyPeriod(week)
->>>>>>> theirs
 
   const existing = await prisma.weeklyInvoice.findUnique({
     where: {
@@ -115,19 +97,7 @@ export async function generateWeeklyInvoiceForBarbershop({
     const appointments = await tx.barbershopAppointment.findMany({
       where: {
         barbershopId,
-<<<<<<< ours
-<<<<<<< ours
         status: "COMPLETED",
-=======
-        status: {
-          in: ["CONFIRMED", "COMPLETED"],
-        },
->>>>>>> theirs
-=======
-        status: {
-          in: ["CONFIRMED", "COMPLETED"],
-        },
->>>>>>> theirs
         startAt: {
           gte: period.periodStartAt,
           lt: period.periodEndExclusiveAt,
