@@ -227,13 +227,11 @@ export default function OwnerFinancePage() {
   } = useOwnerAccess()
 
   const [month, setMonth] = useState(getBusinessMonth())
-  const [weekDate, setWeekDate] = useState(getBusinessDate())
   const [summary, setSummary] = useState<FinanceSummaryData | null>(null)
   const [invoices, setInvoices] = useState<InvoiceItem[]>([])
   const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [generating, setGenerating] = useState(false)
   const [completingPast, setCompletingPast] = useState(false)
   const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null)
   const [paymentSession, setPaymentSession] = useState<PaymentSession | null>(null)
@@ -399,33 +397,6 @@ export default function OwnerFinancePage() {
       }
     })
   }, [isPaymentExpired, paymentSession])
-
-  async function generateWeeklyInvoice() {
-    if (!token) return
-
-    setGenerating(true)
-    setError(null)
-    try {
-      const response = await fetch(`/api/owner/finance/invoices/generate?week=${encodeURIComponent(weekDate)}`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      const result = (await response.json()) as ApiResult<{ created: boolean }>
-      if (!result.success) {
-        setError(resolveErrorMessage(result, "Falha ao gerar fatura semanal."))
-        return
-      }
-
-      await loadFinanceData()
-    } catch {
-      setError("Falha de conexão ao gerar fatura semanal.")
-    } finally {
-      setGenerating(false)
-    }
-  }
 
   async function completePastAppointments() {
     if (!token) return
@@ -648,27 +619,8 @@ export default function OwnerFinancePage() {
           <div>
             <h2 className="text-lg font-semibold">Faturas semanais</h2>
             <p className="mt-1 text-sm text-[#aeb8db]">
-              Fechamento manual semanal do total de taxas cobradas.
+              Fechamento automatico semanal do total de taxas cobradas.
             </p>
-          </div>
-          <div className="flex flex-wrap items-end gap-2">
-            <label className="block">
-              <span className="mb-1 block text-xs uppercase tracking-[0.08em] text-[#aeb8db]">Semana (data base)</span>
-              <input
-                type="date"
-                value={weekDate}
-                onChange={(event) => setWeekDate(event.target.value)}
-                className="rounded-xl border border-white/12 bg-[#0b153c]/88 px-3 py-2 text-sm text-[#f4f6ff] outline-none transition focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
-              />
-            </label>
-            <UIButton
-              type="button"
-              className="!w-auto !px-4 !py-2 !text-sm"
-              onClick={() => void generateWeeklyInvoice()}
-              disabled={generating}
-            >
-              {generating ? "Gerando..." : "Gerar fatura"}
-            </UIButton>
           </div>
         </div>
 

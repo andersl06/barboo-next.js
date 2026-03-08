@@ -226,6 +226,8 @@ EMAIL_FROM="Barboo <no-reply@seu-dominio.com>"
 RESEND_API_KEY=""
 PASSWORD_RESET_TOKEN_SECRET="troque-por-um-segredo-forte"
 PASSWORD_RESET_TOKEN_TTL_MINUTES="30"
+QSTASH_CURRENT_SIGNING_KEY=""
+QSTASH_NEXT_SIGNING_KEY=""
 ```
 
 Observacoes:
@@ -268,6 +270,7 @@ npm run dev
    - `RESEND_API_KEY`
    - `PASSWORD_RESET_TOKEN_SECRET`
    - `PASSWORD_RESET_TOKEN_TTL_MINUTES`
+   - `QSTASH_CURRENT_SIGNING_KEY` / `QSTASH_NEXT_SIGNING_KEY` (assinatura QStash)
 3. Aplique migrations em producao:
 
 ```bash
