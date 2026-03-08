@@ -9,6 +9,11 @@
     code: "DUPLICATE" as const,
     message: "CPF Já cadastrado.",
   },
+  PHONE_ALREADY_EXISTS: {
+    field: "phone" as const,
+    code: "DUPLICATE" as const,
+    message: "Telefone Já cadastrado.",
+  },
   INVALID_CREDENTIALS: {
     field: undefined,
     code: "INVALID_CREDENTIALS" as const,

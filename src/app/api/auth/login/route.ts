@@ -13,7 +13,6 @@ import { loginSchema } from "@/lib/validators/auth"
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    body.email = body.email?.trim().toLowerCase()
 
     const parsed = loginSchema.safeParse(body)
     if (!parsed.success) {
@@ -31,10 +30,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { email, password } = parsed.data
+    const { login, password } = parsed.data
     const ip = getClientIp(req)
 
-    const allowed = rateLimit(`login:${email}:${ip}`, {
+    const allowed = rateLimit(`login:${login}:${ip}`, {
       windowMs: 15 * 60 * 1000,
       maxRequests: 5,
       blockDurationMs: 15 * 60 * 1000,
@@ -48,8 +47,9 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const isEmail = login.includes("@")
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: isEmail ? { email: login } : { phone: login },
     })
 
     if (!user || user.status !== "ACTIVE") {

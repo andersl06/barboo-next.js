@@ -64,6 +64,22 @@ export async function PATCH(req: Request) {
     return success(updated)
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      const target = err.meta?.target
+      const duplicateFields = Array.isArray(target)
+        ? target
+        : typeof target === "string"
+          ? [target]
+          : []
+
+      if (duplicateFields.includes("phone")) {
+        return failure(
+          AUTH_ERRORS.PHONE_ALREADY_EXISTS.code,
+          AUTH_ERRORS.PHONE_ALREADY_EXISTS.message,
+          409,
+          [{ field: AUTH_ERRORS.PHONE_ALREADY_EXISTS.field, message: AUTH_ERRORS.PHONE_ALREADY_EXISTS.message }]
+        )
+      }
+
       return failure(
         AUTH_ERRORS.EMAIL_ALREADY_EXISTS.code,
         AUTH_ERRORS.EMAIL_ALREADY_EXISTS.message,

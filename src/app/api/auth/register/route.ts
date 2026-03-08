@@ -38,7 +38,10 @@ export async function POST(req: Request) {
 
     body.email = body.email?.trim().toLowerCase()
     body.name = body.name?.trim()
-    body.cpf = body.cpf?.replace(/\D/g, "")
+    if (typeof body.cpf === "string") {
+      const normalizedCpf = body.cpf.replace(/\D/g, "")
+      body.cpf = normalizedCpf.length > 0 ? normalizedCpf : undefined
+    }
     body.phone = body.phone?.replace(/\D/g, "")
 
     const data = registerSchema.parse(body)
@@ -93,6 +96,20 @@ export async function POST(req: Request) {
             {
               field: AUTH_ERRORS.CPF_ALREADY_EXISTS.field,
               message: AUTH_ERRORS.CPF_ALREADY_EXISTS.message,
+            },
+          ]
+        )
+      }
+
+      if (duplicateFields.includes("phone")) {
+        return failure(
+          AUTH_ERRORS.PHONE_ALREADY_EXISTS.code,
+          AUTH_ERRORS.PHONE_ALREADY_EXISTS.message,
+          409,
+          [
+            {
+              field: AUTH_ERRORS.PHONE_ALREADY_EXISTS.field,
+              message: AUTH_ERRORS.PHONE_ALREADY_EXISTS.message,
             },
           ]
         )

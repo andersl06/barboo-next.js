@@ -1,4 +1,12 @@
+<<<<<<< ours
+<<<<<<< ours
 ﻿import { generateWeeklyInvoiceForBarbershop } from "@/lib/finance/generate-weekly-invoice"
+=======
+import { generateWeeklyInvoiceForBarbershop } from "@/lib/finance/generate-weekly-invoice"
+>>>>>>> theirs
+=======
+import { generateWeeklyInvoiceForBarbershop } from "@/lib/finance/generate-weekly-invoice"
+>>>>>>> theirs
 import { markPastConfirmedAppointmentsAsCompleted } from "@/lib/finance/appointments"
 import { requireOwnerFinanceContext } from "@/lib/finance/owner-context"
 import { refreshBarbershopFinancialState } from "@/lib/finance/invoices"

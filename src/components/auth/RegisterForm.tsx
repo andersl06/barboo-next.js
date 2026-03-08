@@ -63,6 +63,10 @@ function translateRegisterError(result: Extract<ApiResult<{ id: string }>, { suc
       return "Este CPF Já esta cadastrado."
     }
 
+    if (field === "phone") {
+      return "Este telefone Já esta cadastrado."
+    }
+
     return "Já existe um cadastro com estes dados."
   }
 
@@ -80,6 +84,7 @@ function translateRegisterError(result: Extract<ApiResult<{ id: string }>, { suc
 
 export function RegisterForm({ onboardingIntent }: { onboardingIntent: RegisterIntent }) {
   const router = useRouter()
+  const shouldShowCpf = onboardingIntent === "OWNER"
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [cpf, setCpf] = useState("")
@@ -109,7 +114,7 @@ export function RegisterForm({ onboardingIntent }: { onboardingIntent: RegisterI
         body: JSON.stringify({
           name,
           email,
-          cpf: onlyDigits(cpf),
+          cpf: shouldShowCpf ? (onlyDigits(cpf) || undefined) : undefined,
           phone: onlyDigits(phone),
           password,
           onboardingIntent,
@@ -170,20 +175,21 @@ export function RegisterForm({ onboardingIntent }: { onboardingIntent: RegisterI
       </label>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <label className="block space-y-1.5">
-          <span className="text-xs font-semibold uppercase tracking-[0.08em] text-[#b7c2e6]">
-            CPF
-          </span>
-          <input
-            className={inputClassName}
-            type="text"
-            inputMode="numeric"
-            value={cpf}
-            placeholder="000.000.000-00"
-            onChange={(event) => setCpf(applyCpfMask(event.target.value))}
-            required
-          />
-        </label>
+        {shouldShowCpf ? (
+          <label className="block space-y-1.5">
+            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-[#b7c2e6]">
+              CPF (opcional)
+            </span>
+            <input
+              className={inputClassName}
+              type="text"
+              inputMode="numeric"
+              value={cpf}
+              placeholder="000.000.000-00"
+              onChange={(event) => setCpf(applyCpfMask(event.target.value))}
+            />
+          </label>
+        ) : null}
 
         <label className="block space-y-1.5">
           <span className="text-xs font-semibold uppercase tracking-[0.08em] text-[#b7c2e6]">

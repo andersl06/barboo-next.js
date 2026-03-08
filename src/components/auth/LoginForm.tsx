@@ -49,8 +49,12 @@ function resolveNextPath(raw: string | null) {
   }
 }
 
-function normalizeEmail(value: string) {
-  return value.trim().toLowerCase()
+function normalizeLogin(value: string) {
+  const trimmed = value.trim()
+  if (trimmed.includes("@")) {
+    return trimmed.toLowerCase()
+  }
+  return trimmed
 }
 
 function translateLoginError(result: Extract<ApiResult<LoginResponseData>, { success: false }>) {
@@ -116,7 +120,7 @@ function LockIcon() {
 
 export function LoginForm({ registered = false, reset = false, nextPath }: LoginFormProps) {
   const router = useRouter()
-  const [email, setEmail] = useState("")
+  const [login, setLogin] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -138,7 +142,7 @@ export function LoginForm({ registered = false, reset = false, nextPath }: Login
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ login, password }),
       })
 
       const result = await response.json() as ApiResult<LoginResponseData>
@@ -218,10 +222,12 @@ export function LoginForm({ registered = false, reset = false, nextPath }: Login
         </span>
         <input
           className="w-full rounded-xl border border-white/12 bg-[#0b153c]/88 py-3 pl-11 pr-3 text-base text-[#f4f6ff] outline-none transition placeholder:text-[#8796c5] focus:border-[#3f77f5] focus:ring-2 focus:ring-[#3f77f5]/30"
-          type="email"
-          value={email}
-          placeholder="Seu E-mail"
-          onChange={(event) => setEmail(normalizeEmail(event.target.value))}
+          type="text"
+          value={login}
+          placeholder="Email ou telefone"
+          autoCapitalize="none"
+          autoCorrect="off"
+          onChange={(event) => setLogin(normalizeLogin(event.target.value))}
           required
         />
       </label>

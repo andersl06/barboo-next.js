@@ -213,6 +213,19 @@ export async function PATCH(req: Request) {
     return success(updated)
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      const target = err.meta?.target
+      const duplicateFields = Array.isArray(target)
+        ? target
+        : typeof target === "string"
+          ? [target]
+          : []
+
+      if (duplicateFields.includes("phone")) {
+        return failure("CONFLICT", "Telefone Já esta em uso.", 409, [
+          { field: "phone", message: "Telefone Já esta em uso." },
+        ])
+      }
+
       return failure("CONFLICT", "Email Já esta em uso.", 409, [
         { field: "email", message: "Email Já esta em uso." },
       ])

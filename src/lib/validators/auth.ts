@@ -3,23 +3,50 @@ import { isValidCPF } from "./cpf"
 
 export const onboardingIntentSchema = z.enum(["CLIENT", "OWNER"])
 
+function isEmail(value: string) {
+  return z.string().email().safeParse(value).success
+}
+
+function isPhone(value: string) {
+  return /^\d{10,11}$/.test(value)
+}
+
+const optionalCpfSchema = z.preprocess((value) => {
+  if (typeof value !== "string") return value
+  const digits = value.replace(/\D/g, "")
+  return digits.length === 0 ? undefined : digits
+}, z.string()
+  .length(11, "CPF deve conter 11 digitos")
+  .regex(/^\d+$/, "CPF deve conter apenas numeros")
+  .refine(isValidCPF, {
+    message: "CPF inválido",
+  })
+  .optional()
+)
+
+const loginIdentifierSchema = z.preprocess((value) => {
+  if (typeof value !== "string") return value
+  const trimmed = value.trim()
+  if (trimmed.includes("@")) {
+    return trimmed.toLowerCase()
+  }
+  return trimmed.replace(/\D/g, "")
+}, z.string()
+  .min(1, "Email ou telefone obrigatório")
+  .refine((value) => isEmail(value) || isPhone(value), "Email ou telefone inválido")
+)
+
 export const registerSchema = z.object({
   name: z.string().min(3, "Nome muito curto"),
   email: z.string().email("Email inválido"),
-  cpf: z
-    .string()
-    .length(11, "CPF deve conter 11 digitos")
-    .regex(/^\d+$/, "CPF deve conter apenas numeros")
-    .refine(isValidCPF, {
-      message: "CPF inválido",
-    }),
+  cpf: optionalCpfSchema,
   phone: z.string().min(10, "Telefone inválido"),
   password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
   onboardingIntent: onboardingIntentSchema.optional().default("CLIENT"),
 })
 
 export const loginSchema = z.object({
-  email: z.string().email("Email inválido"),
+  login: loginIdentifierSchema,
   password: z.string().min(1, "Senha obrigatória"),
 })
 

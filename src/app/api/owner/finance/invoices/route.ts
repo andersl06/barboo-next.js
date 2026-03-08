@@ -2,7 +2,7 @@
 import { markPastConfirmedAppointmentsAsCompleted } from "@/lib/finance/appointments"
 import { generateWeeklyInvoiceForBarbershop } from "@/lib/finance/generate-weekly-invoice"
 import { requireOwnerFinanceContext } from "@/lib/finance/owner-context"
-import { refreshBarbershopFinancialState } from "@/lib/finance/invoices"
+import { addBusinessDays, getCurrentBusinessDate, refreshBarbershopFinancialState } from "@/lib/finance/invoices"
 import { failure, success } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
 
@@ -14,8 +14,21 @@ export async function GET(req: Request) {
     }
 
     await markPastConfirmedAppointmentsAsCompleted(context.barbershopId)
+<<<<<<< ours
+<<<<<<< ours
     await generateWeeklyInvoiceForBarbershop({
       barbershopId: context.barbershopId,
+=======
+=======
+>>>>>>> theirs
+    const previousWeekReferenceDate = addBusinessDays(getCurrentBusinessDate(), -7)
+    await generateWeeklyInvoiceForBarbershop({
+      barbershopId: context.barbershopId,
+      week: previousWeekReferenceDate,
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
     })
     await refreshBarbershopFinancialState(context.barbershopId)
 
