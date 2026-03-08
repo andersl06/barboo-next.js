@@ -250,6 +250,7 @@ model WeeklyInvoice {
   providerQrCodeBase64     String?      @db.Text
   providerTicketUrl        String?      @db.Text
   providerExternalReference String?     @db.VarChar(120)
+  providerIdempotencyKey   String?      @db.VarChar(80)
   providerPaidAt           DateTime?
   paidAt            DateTime?
   notes             String?             @db.Text

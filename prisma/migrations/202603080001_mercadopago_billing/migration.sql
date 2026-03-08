@@ -18,6 +18,7 @@ ALTER TABLE "weekly_invoices"
   ADD COLUMN IF NOT EXISTS "providerQrCodeBase64" TEXT,
   ADD COLUMN IF NOT EXISTS "providerTicketUrl" TEXT,
   ADD COLUMN IF NOT EXISTS "providerExternalReference" VARCHAR(120),
+  ADD COLUMN IF NOT EXISTS "providerIdempotencyKey" VARCHAR(80),
   ADD COLUMN IF NOT EXISTS "providerPaidAt" TIMESTAMP(3);
 
 DROP INDEX IF EXISTS "weekly_invoices_abacateChargeId_key";

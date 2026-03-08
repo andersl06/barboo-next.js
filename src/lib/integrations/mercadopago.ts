@@ -172,6 +172,7 @@ export async function createMercadoPagoPixPayment(input: {
   externalReference: string
   payerEmail: string
   expiresInSeconds: number
+  idempotencyKey?: string | null
 }) {
   const notificationUrl = resolveNotificationUrl()
   const expiresAt = new Date(Date.now() + input.expiresInSeconds * 1000).toISOString()
@@ -179,6 +180,7 @@ export async function createMercadoPagoPixPayment(input: {
 
   const payload = await callMercadoPago<Record<string, unknown>>("/v1/payments", {
     method: "POST",
+    headers: input.idempotencyKey ? { "X-Idempotency-Key": input.idempotencyKey } : undefined,
     body: JSON.stringify({
       transaction_amount: amount,
       description: input.description,

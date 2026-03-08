@@ -7,6 +7,7 @@ import { requireOwnerFinanceContext } from "@/lib/finance/owner-context"
 import { createMercadoPagoPixPayment, MercadoPagoError } from "@/lib/integrations/mercadopago"
 import { failure, success } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
+import crypto from "crypto"
 
 const paramsSchema = z.object({
   invoiceId: z.string().uuid("invoiceId invalido."),
@@ -27,6 +28,7 @@ function canReuseStoredCharge(invoice: {
   providerPaymentId: string | null
   providerExpiresAt: Date | null
   providerPixCode: string | null
+  providerIdempotencyKey: string | null
 }) {
   if (!PAYABLE_STATUSES.includes(invoice.status)) return false
   if (invoice.paymentProvider !== MERCADOPAGO_PROVIDER) return false
@@ -96,6 +98,7 @@ export async function POST(
         providerQrCodeBase64: true,
         providerPixCode: true,
         providerTicketUrl: true,
+        providerIdempotencyKey: true,
         barbershop: {
           select: {
             id: true,
@@ -150,12 +153,26 @@ export async function POST(
     const weekLabel = toIsoWeekLabel(invoice.periodStart)
     const description = buildPixDescription(invoice.barbershop.name, weekLabel)
 
+    let idempotencyKey = invoice.providerIdempotencyKey
+    const shouldRefreshIdempotencyKey = !idempotencyKey || Boolean(invoice.providerPaymentId)
+    if (shouldRefreshIdempotencyKey) {
+      idempotencyKey = `inv-${invoice.id}-${crypto.randomUUID()}`
+      await prisma.weeklyInvoice.update({
+        where: { id: invoice.id },
+        data: {
+          providerIdempotencyKey: idempotencyKey,
+        },
+        select: { id: true },
+      })
+    }
+
     const payment = await createMercadoPagoPixPayment({
       amountCents: invoice.totalFeesCents,
       description,
       externalReference: invoice.id,
       payerEmail: owner.email,
       expiresInSeconds: CHARGE_EXPIRES_IN_SECONDS,
+      idempotencyKey,
     })
 
     if (!payment.qrCode) {
@@ -189,6 +206,7 @@ export async function POST(
           providerQrCodeBase64: payment.qrCodeBase64,
           providerTicketUrl: payment.ticketUrl,
           providerExternalReference: payment.externalReference ?? invoice.id,
+          providerIdempotencyKey: idempotencyKey,
           providerPaidAt: paidAt,
         },
         select: {
