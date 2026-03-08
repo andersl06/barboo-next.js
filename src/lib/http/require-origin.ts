@@ -1,11 +1,17 @@
 type OriginCheckResult = { ok: true } | { ok: false; status: number; message: string }
 
-function resolveAllowedOrigin() {
+function resolveAllowedOrigins() {
   const appUrl = process.env.APP_URL
   if (!appUrl) return null
 
   try {
-    return new URL(appUrl).origin
+    const origin = new URL(appUrl).origin
+    const parsedOrigin = new URL(origin)
+    const hostname = parsedOrigin.hostname
+    const hasWww = hostname.startsWith("www.")
+    const alternateHostname = hasWww ? hostname.slice(4) : `www.${hostname}`
+    const alternateOrigin = `${parsedOrigin.protocol}//${alternateHostname}`
+    return new Set([origin, alternateOrigin])
   } catch {
     return null
   }
@@ -26,10 +32,10 @@ function resolveRequestOrigin(req: Request) {
 }
 
 export function requireSameOrigin(req: Request): OriginCheckResult {
-  const allowedOrigin = resolveAllowedOrigin()
-  if (!allowedOrigin) {
+  const allowedOrigins = resolveAllowedOrigins()
+  if (!allowedOrigins) {
     if (process.env.NODE_ENV === "production") {
-      return { ok: false, status: 500, message: "APP_URL não configurada." }
+      return { ok: false, status: 500, message: "APP_URL nao configurada." }
     }
     return { ok: true }
   }
@@ -42,8 +48,8 @@ export function requireSameOrigin(req: Request): OriginCheckResult {
     return { ok: true }
   }
 
-  if (requestOrigin !== allowedOrigin) {
-    return { ok: false, status: 403, message: "Origem inválida." }
+  if (!allowedOrigins.has(requestOrigin)) {
+    return { ok: false, status: 403, message: "Origem invalida." }
   }
 
   return { ok: true }
