@@ -1,7 +1,7 @@
 ﻿
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { ChargeStatus } from "@/lib/billing/types"
 import { OwnerGate } from "@/components/owner/OwnerGate"
 import { OwnerShell } from "@/components/owner/OwnerShell"
@@ -91,9 +91,14 @@ type InvoicesData = {
 
 type PayInvoiceData = {
   invoiceId: string
+  paymentId?: string | null
   qrCodeImageUrl: string | null
   qrCodeCopyPaste: string
+  pixCode?: string | null
+  qrCodeBase64?: string | null
+  ticketUrl?: string | null
   expiresAt: string | null
+  amount?: number
   amountCents: number
   status: ChargeStatus
   reused: boolean
@@ -114,15 +119,10 @@ type PaymentSession = {
   expiresAt: string | null
   amountCents: number
   status: ChargeStatus
-  polling: boolean
-  timeoutReached: boolean
   rateLimited: boolean
   paidAt: string | null
   message: string | null
 }
-
-const MAX_POLL_ATTEMPTS = 100
-const POLL_INTERVAL_MS = 3000
 
 function resolveErrorMessage(result: ApiFailure, fallback: string) {
   return result.errors?.[0]?.message ?? result.message ?? fallback
@@ -210,13 +210,12 @@ function chargeStatusLabel(status: ChargeStatus) {
 
 function canClosePaymentModal(session: PaymentSession | null) {
   if (!session) return true
-  return session.status === "PAID" || session.status === "EXPIRED" || session.timeoutReached
-}
-
-function wait(ms: number) {
-  return new Promise<void>((resolve) => {
-    window.setTimeout(resolve, ms)
-  })
+  if (session.status === "PAID" || session.status === "EXPIRED") return true
+  if (session.expiresAt) {
+    const expiresAt = new Date(session.expiresAt).getTime()
+    if (!Number.isNaN(expiresAt) && expiresAt <= Date.now()) return true
+  }
+  return false
 }
 
 export default function OwnerFinancePage() {
@@ -242,16 +241,14 @@ export default function OwnerFinancePage() {
   const [validatingPayment, setValidatingPayment] = useState(false)
   const [countdownNowMs, setCountdownNowMs] = useState(Date.now())
 
-  const pollingAbortRef = useRef(false)
-  const paymentSessionRef = useRef<PaymentSession | null>(null)
-
-  useEffect(() => {
-    paymentSessionRef.current = paymentSession
-  }, [paymentSession])
-
-  const stopPaymentPolling = useCallback(() => {
-    pollingAbortRef.current = true
-  }, [])
+  const isPaymentExpired = useMemo(() => {
+    if (!paymentSession) return false
+    if (paymentSession.status === "EXPIRED") return true
+    if (!paymentSession.expiresAt) return false
+    const expiresAt = new Date(paymentSession.expiresAt).getTime()
+    if (Number.isNaN(expiresAt)) return false
+    return expiresAt <= countdownNowMs
+  }, [paymentSession, countdownNowMs])
 
   const loadFinanceData = useCallback(async () => {
     if (!token) return
@@ -322,12 +319,11 @@ export default function OwnerFinancePage() {
           if (!current || current.invoiceId !== invoiceId) return current
           return {
             ...current,
-            polling: true,
             message: resolveErrorMessage(
               result,
               options?.manual
                 ? "Pagamento ainda não confirmado."
-                : "Falha ao confirmar o pagamento. Retentando..."
+                : "Falha ao confirmar o pagamento. Tente novamente."
             ),
           }
         })
@@ -342,8 +338,6 @@ export default function OwnerFinancePage() {
           status: data.status,
           expiresAt: data.expiresAt ?? current.expiresAt,
           rateLimited: Boolean(data.rateLimited),
-          polling: data.status === "PENDING" || data.status === "UNKNOWN",
-          timeoutReached: data.status === "EXPIRED" ? true : current.timeoutReached,
           paidAt: data.paidAt,
           message:
             data.status === "PAID"
@@ -359,61 +353,20 @@ export default function OwnerFinancePage() {
       })
 
       if (data.status === "PAID") {
-        pollingAbortRef.current = true
         await loadFinanceData()
-      }
-
-      if (data.status === "EXPIRED") {
-        pollingAbortRef.current = true
       }
     } catch {
       setPaymentSession((current) => {
         if (!current || current.invoiceId !== invoiceId) return current
         return {
           ...current,
-          polling: true,
           message: options?.manual
             ? "Falha de conexão ao validar pagamento."
-            : "Falha de conexão ao consultar pagamento. Retentando...",
+            : "Falha de conexão ao consultar pagamento. Tente novamente.",
         }
       })
     }
   }, [loadFinanceData, token])
-
-  const startPaymentPolling = useCallback((invoiceId: string) => {
-    if (!token) return
-
-    pollingAbortRef.current = false
-
-    void (async () => {
-      for (let attempt = 1; attempt <= MAX_POLL_ATTEMPTS; attempt += 1) {
-        if (pollingAbortRef.current) return
-        if (paymentSessionRef.current && paymentSessionRef.current.invoiceId !== invoiceId) return
-
-        await wait(POLL_INTERVAL_MS)
-        if (pollingAbortRef.current) return
-        if (paymentSessionRef.current && paymentSessionRef.current.invoiceId !== invoiceId) return
-
-        await checkPaymentStatus(invoiceId)
-
-        const currentStatus = paymentSessionRef.current?.status
-        if (currentStatus === "PAID" || currentStatus === "EXPIRED") return
-      }
-
-      if (pollingAbortRef.current) return
-
-      setPaymentSession((current) => {
-        if (!current || current.invoiceId !== invoiceId) return current
-        return {
-          ...current,
-          polling: false,
-          timeoutReached: true,
-          message: "Pagamento não confirmado em 5 minutos. Você pode tentar novamente.",
-        }
-      })
-      pollingAbortRef.current = true
-    })()
-  }, [checkPaymentStatus, token])
 
   useEffect(() => {
     if (state !== "ready") return
@@ -433,10 +386,19 @@ export default function OwnerFinancePage() {
   }, [paymentSession])
 
   useEffect(() => {
-    return () => {
-      pollingAbortRef.current = true
-    }
-  }, [])
+    if (!paymentSession) return
+    if (paymentSession.status === "PAID" || paymentSession.status === "EXPIRED") return
+    if (!isPaymentExpired) return
+
+    setPaymentSession((current) => {
+      if (!current || current.invoiceId !== paymentSession.invoiceId) return current
+      return {
+        ...current,
+        status: "EXPIRED",
+        message: "Pagamento nao confirmado. Gere um novo QR Code para tentar novamente.",
+      }
+    })
+  }, [isPaymentExpired, paymentSession])
 
   async function generateWeeklyInvoice() {
     if (!token) return
@@ -493,7 +455,6 @@ export default function OwnerFinancePage() {
   async function payInvoice(invoiceId: string) {
     if (!token) return
 
-    stopPaymentPolling()
     setCopyFeedback(null)
     setPayingInvoiceId(invoiceId)
     setError(null)
@@ -519,13 +480,11 @@ export default function OwnerFinancePage() {
         expiresAt: result.data.expiresAt,
         amountCents: result.data.amountCents,
         status: result.data.status,
-        polling: result.data.status === "PENDING" || result.data.status === "UNKNOWN",
-        timeoutReached: false,
         rateLimited: false,
         paidAt: null,
         message: result.data.reused
           ? "Reutilizando Cobrança PIX ativa."
-          : "Cobrança PIX criada. Aguardando pagamento...",
+          : "Cobrança PIX criada. Aguarde a confirmação ou valide manualmente.",
       }
 
       setPaymentSession(session)
@@ -534,8 +493,6 @@ export default function OwnerFinancePage() {
         await loadFinanceData()
         return
       }
-
-      startPaymentPolling(session.invoiceId)
     } catch {
       setError("Falha de conexão ao gerar Cobrança PIX.")
     } finally {
@@ -572,13 +529,11 @@ export default function OwnerFinancePage() {
 
   function closePaymentModal() {
     if (!canClosePaymentModal(paymentSession)) return
-    stopPaymentPolling()
     setPaymentSession(null)
     setCopyFeedback(null)
   }
 
   function deferPaymentModal() {
-    stopPaymentPolling()
     setPaymentSession(null)
     setCopyFeedback(null)
   }
@@ -724,8 +679,7 @@ export default function OwnerFinancePage() {
               const isPaying = payingInvoiceId === invoice.id
               const isAwaitingPayment =
                 paymentSession?.invoiceId === invoice.id &&
-                (paymentSession.status === "PENDING" || paymentSession.status === "UNKNOWN") &&
-                paymentSession.polling
+                (paymentSession.status === "PENDING" || paymentSession.status === "UNKNOWN")
 
               return (
                 <article key={invoice.id} className="rounded-xl border border-white/12 bg-[#091029]/90 p-4">
@@ -876,7 +830,8 @@ export default function OwnerFinancePage() {
                       <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${chargeBadgeClass(paymentSession.status)}`}>
                         {chargeStatusLabel(paymentSession.status)}
                       </span>
-                      {!paymentSession.message && paymentSession.polling ? (
+                      {!paymentSession.message &&
+                      (paymentSession.status === "PENDING" || paymentSession.status === "UNKNOWN") ? (
                         <span className="text-xs text-[#b7c2e8]">Aguardando pagamento...</span>
                       ) : null}
                     </div>
@@ -887,7 +842,7 @@ export default function OwnerFinancePage() {
 
                     {paymentSession.rateLimited ? (
                       <p className="mt-2 text-xs text-amber-100">
-                        Limite temporario ao consultar status. O polling continuou com intervalo maior.
+                        Limite temporario ao consultar status. Tente novamente em alguns segundos.
                       </p>
                     ) : null}
                   </div>
@@ -943,7 +898,7 @@ export default function OwnerFinancePage() {
                 </button>
               ) : null}
 
-              {(paymentSession.timeoutReached || paymentSession.status === "EXPIRED") ? (
+              {isPaymentExpired ? (
                 <button
                   type="button"
                   onClick={() => void retryPayment()}

@@ -1,13 +1,14 @@
-﻿import { z } from "zod"
+import { z } from "zod"
+import { mapMercadoPagoStatus, MERCADOPAGO_PROVIDER, toAmountCents } from "@/lib/billing/mercadopago"
 import { prisma } from "@/lib/db/prisma"
 import { requireOwnerFinanceContext } from "@/lib/finance/owner-context"
 import { refreshBarbershopFinancialState } from "@/lib/finance/invoices"
-import { AbacatePayError, getPixChargeStatus } from "@/lib/integrations/abacatepay"
+import { getMercadoPagoPayment, MercadoPagoError } from "@/lib/integrations/mercadopago"
 import { failure, success } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
 
 const paramsSchema = z.object({
-  id: z.string().uuid("id inválido."),
+  id: z.string().uuid("id invalido."),
 })
 
 export async function POST(
@@ -24,7 +25,7 @@ export async function POST(
     if (!parsedParams.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de Validação",
+        "Erro de Validacao",
         400,
         parsedParams.error.issues.map((issue) => ({
           field:
@@ -45,36 +46,49 @@ export async function POST(
         id: true,
         status: true,
         totalFeesCents: true,
-        abacateChargeId: true,
+        paymentProvider: true,
+        providerPaymentId: true,
       },
     })
 
     if (!invoice) {
-      return failure("NOT_FOUND", "Fatura não encontrada.", 404)
+      return failure("NOT_FOUND", "Fatura nao encontrada.", 404)
     }
 
     if (invoice.status === "PAID") {
-      return failure("INVOICE_ALREADY_PAID", "Esta fatura Já esta paga.", 409)
+      return failure("INVOICE_ALREADY_PAID", "Esta fatura Ja esta paga.", 409)
     }
 
-    if (!invoice.abacateChargeId) {
-      return failure("CHARGE_NOT_FOUND", "Esta fatura não possui Cobrança PIX vinculada.", 409)
+    if (!invoice.providerPaymentId || invoice.paymentProvider !== MERCADOPAGO_PROVIDER) {
+      return failure("CHARGE_NOT_FOUND", "Esta fatura nao possui cobranca PIX vinculada.", 409)
     }
 
-    const charge = await getPixChargeStatus(invoice.abacateChargeId)
-    if (charge.status !== "PAID") {
-      return failure("PAYMENT_NOT_CONFIRMED", "Pagamento ainda não confirmado na AbacatePay.", 409)
+    const payment = await getMercadoPagoPayment(invoice.providerPaymentId)
+    const expiresAt = payment.expiresAt ? new Date(payment.expiresAt) : null
+    const paymentStatus = mapMercadoPagoStatus(payment.status, expiresAt)
+
+    if (paymentStatus !== "PAID") {
+      return failure("PAYMENT_NOT_CONFIRMED", "Pagamento ainda nao confirmado no Mercado Pago.", 409)
     }
 
-    const paidAt = charge.paidAt ? new Date(charge.paidAt) : new Date()
+    const paidAt = new Date()
+    const amountCents = toAmountCents(payment.amount) ?? invoice.totalFeesCents
+
     const updated = await prisma.weeklyInvoice.update({
       where: { id: invoice.id },
       data: {
         status: "PAID",
         paidAt,
-        abacatePaidAt: paidAt,
-        abacatePaidAmountCents: charge.amountCents > 0 ? charge.amountCents : invoice.totalFeesCents,
-        abacateChargeStatus: charge.rawStatus,
+        paymentProvider: MERCADOPAGO_PROVIDER,
+        providerStatus: payment.status,
+        providerStatusDetail: payment.statusDetail,
+        providerAmountCents: amountCents,
+        providerExpiresAt: expiresAt,
+        providerTicketUrl: payment.ticketUrl,
+        providerExternalReference: payment.externalReference ?? invoice.id,
+        providerPixCode: payment.qrCode,
+        providerQrCodeBase64: payment.qrCodeBase64,
+        providerPaidAt: paidAt,
       },
       select: {
         id: true,
@@ -95,7 +109,7 @@ export async function POST(
       financialStatus: financialState.financialStatus,
     })
   } catch (err) {
-    if (err instanceof AbacatePayError) {
+    if (err instanceof MercadoPagoError) {
       console.error("[finance] mark-paid check failed", {
         route: "POST /api/owner/finance/invoices/:id/mark-paid",
         errorCode: err.code,
@@ -103,7 +117,7 @@ export async function POST(
         message: err.message,
       })
 
-      return failure("ABACATEPAY_ERROR", "Falha ao validar pagamento na AbacatePay.", 502)
+      return failure("MERCADOPAGO_ERROR", "Falha ao validar pagamento no Mercado Pago.", 502)
     }
 
     return handleError(err)

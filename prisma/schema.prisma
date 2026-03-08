@@ -240,14 +240,17 @@ model WeeklyInvoice {
   status            FinanceInvoiceStatus @default(OPEN)
   totalAppointments Int                 @default(0)
   totalFeesCents    Int                 @default(0)
-  abacateChargeId          String?      @unique @db.VarChar(120)
-  abacateChargeStatus      String?      @db.VarChar(40)
-  abacateChargeCreatedAt   DateTime?
-  abacateChargeExpiresAt   DateTime?
-  abacateQrCodeImageUrl    String?      @db.Text
-  abacateQrCodeCopyPaste   String?      @db.Text
-  abacatePaidAmountCents   Int?
-  abacatePaidAt            DateTime?
+  paymentProvider          String?      @db.VarChar(30)
+  providerPaymentId        String?      @db.VarChar(120)
+  providerStatus           String?      @db.VarChar(40)
+  providerStatusDetail     String?      @db.VarChar(80)
+  providerAmountCents      Int?
+  providerExpiresAt        DateTime?
+  providerPixCode          String?      @db.Text
+  providerQrCodeBase64     String?      @db.Text
+  providerTicketUrl        String?      @db.Text
+  providerExternalReference String?     @db.VarChar(120)
+  providerPaidAt           DateTime?
   paidAt            DateTime?
   notes             String?             @db.Text
   createdAt         DateTime            @default(now())
@@ -257,6 +260,7 @@ model WeeklyInvoice {
   items             WeeklyInvoiceAppointment[]
 
   @@unique([barbershopId, periodStart, periodEnd])
+  @@unique([paymentProvider, providerPaymentId])
   @@index([barbershopId, status, dueAt])
   @@index([barbershopId, periodStart, periodEnd])
   @@map("weekly_invoices")

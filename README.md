@@ -311,26 +311,29 @@ Exemplo de comando unico para pipeline/servidor:
 npx prisma migrate deploy && npx prisma generate && npm run build
 ```
 
-## Cobranca semanal via AbacatePay (PIX)
+## Cobranca semanal via Mercado Pago (PIX)
 
 Fluxo implementado para OWNER em `/owner/finance`:
 
 - Botao `Pagar fatura` cria cobranca PIX no backend.
 - Modal mostra QR Code, codigo copia e cola, valor e expiracao.
-- Polling de status a cada 1s por ate 5 minutos (com backoff leve em 429).
+- Atualizacao principal via webhook do Mercado Pago.
+- O botao `Ja efetuei o pagamento` faz checagem manual do status.
 - Quando pago, a fatura muda para `PAID`.
-- Se nao confirmar em 5 minutos, a fatura continua pendente e o modal permite gerar novo QR.
 
 ### Variavel de ambiente
 
 ```env
-ABACATEPAY_API_KEY="seu-token-abacatepay"
+MP_ACCESS_TOKEN="seu-token-mercadopago"
+MP_WEBHOOK_SECRET="seu-webhook-secret"
+MP_NOTIFICATION_URL="https://seu-dominio.com/api/webhooks/mercadopago"
 ```
 
 ### Endpoints
 
 - `POST /api/billing/invoices/:invoiceId/pay`
-- `GET /api/billing/charges/:chargeId/status`
+- `GET /api/billing/invoices/:invoiceId/pay/status`
+- `POST /api/webhooks/mercadopago`
 
 ### Teste rapido em desenvolvimento
 

@@ -1,14 +1,15 @@
-﻿import { z } from "zod"
+import { z } from "zod"
 import { ChargeStatus } from "@/lib/billing/types"
+import { mapMercadoPagoStatus, MERCADOPAGO_PROVIDER, toAmountCents } from "@/lib/billing/mercadopago"
 import { prisma } from "@/lib/db/prisma"
 import { refreshBarbershopFinancialState } from "@/lib/finance/invoices"
 import { requireOwnerFinanceContext } from "@/lib/finance/owner-context"
-import { AbacatePayError, getPixChargeStatus } from "@/lib/integrations/abacatepay"
+import { getMercadoPagoPayment, MercadoPagoError } from "@/lib/integrations/mercadopago"
 import { failure, success } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
 
 const paramsSchema = z.object({
-  invoiceId: z.string().uuid("invoiceId inválido."),
+  invoiceId: z.string().uuid("invoiceId invalido."),
 })
 
 async function handleStatusCheck(
@@ -25,7 +26,7 @@ async function handleStatusCheck(
     if (!parsedParams.success) {
       return failure(
         "VALIDATION_ERROR",
-        "Erro de Validação",
+        "Erro de Validacao",
         400,
         parsedParams.error.issues.map((issue) => ({
           field:
@@ -47,16 +48,13 @@ async function handleStatusCheck(
         status: true,
         totalFeesCents: true,
         paidAt: true,
-        abacateChargeId: true,
+        paymentProvider: true,
+        providerPaymentId: true,
       },
     })
 
     if (!invoice) {
-      return failure("NOT_FOUND", "Fatura não encontrada para esta barbearia.", 404)
-    }
-
-    if (!invoice.abacateChargeId) {
-      return failure("CHARGE_NOT_FOUND", "Esta fatura ainda não possui Cobrança PIX ativa.", 409)
+      return failure("NOT_FOUND", "Fatura nao encontrada para esta barbearia.", 404)
     }
 
     if (invoice.status === "PAID") {
@@ -68,11 +66,18 @@ async function handleStatusCheck(
       })
     }
 
-    try {
-      const charge = await getPixChargeStatus(invoice.abacateChargeId)
+    if (!invoice.providerPaymentId || invoice.paymentProvider !== MERCADOPAGO_PROVIDER) {
+      return failure("CHARGE_NOT_FOUND", "Esta fatura ainda nao possui cobranca PIX ativa.", 409)
+    }
 
-      if (charge.status === "PAID") {
-        const paidAt = charge.paidAt ? new Date(charge.paidAt) : new Date()
+    try {
+      const payment = await getMercadoPagoPayment(invoice.providerPaymentId)
+      const expiresAt = payment.expiresAt ? new Date(payment.expiresAt) : null
+      const paymentStatus = mapMercadoPagoStatus(payment.status, expiresAt)
+      const amountCents = toAmountCents(payment.amount) ?? invoice.totalFeesCents
+
+      if (paymentStatus === "PAID") {
+        const paidAt = new Date()
 
         const updated = await prisma.$transaction(async (tx) => {
           const updatedInvoice = await tx.weeklyInvoice.update({
@@ -80,9 +85,16 @@ async function handleStatusCheck(
             data: {
               status: "PAID",
               paidAt,
-              abacatePaidAt: paidAt,
-              abacatePaidAmountCents: charge.amountCents > 0 ? charge.amountCents : invoice.totalFeesCents,
-              abacateChargeStatus: charge.rawStatus,
+              paymentProvider: MERCADOPAGO_PROVIDER,
+              providerStatus: payment.status,
+              providerStatusDetail: payment.statusDetail,
+              providerAmountCents: amountCents,
+              providerExpiresAt: expiresAt,
+              providerTicketUrl: payment.ticketUrl,
+              providerExternalReference: payment.externalReference ?? invoice.id,
+              providerPixCode: payment.qrCode,
+              providerQrCodeBase64: payment.qrCodeBase64,
+              providerPaidAt: paidAt,
             },
             select: {
               id: true,
@@ -99,27 +111,34 @@ async function handleStatusCheck(
           invoiceId: updated.id,
           status: "PAID" as ChargeStatus,
           paidAt: updated.paidAt?.toISOString() ?? null,
-          expiresAt: charge.expiresAt,
+          expiresAt: payment.expiresAt,
         })
       }
 
       await prisma.weeklyInvoice.update({
         where: { id: invoice.id },
         data: {
-          abacateChargeStatus: charge.rawStatus,
-          abacateChargeExpiresAt: charge.expiresAt ? new Date(charge.expiresAt) : undefined,
+          paymentProvider: MERCADOPAGO_PROVIDER,
+          providerStatus: payment.status,
+          providerStatusDetail: payment.statusDetail,
+          providerAmountCents: amountCents,
+          providerExpiresAt: expiresAt,
+          providerTicketUrl: payment.ticketUrl,
+          providerExternalReference: payment.externalReference ?? invoice.id,
+          providerPixCode: payment.qrCode,
+          providerQrCodeBase64: payment.qrCodeBase64,
         },
         select: { id: true },
       })
 
       return success({
         invoiceId: invoice.id,
-        status: charge.status,
+        status: paymentStatus,
         paidAt: null,
-        expiresAt: charge.expiresAt,
+        expiresAt: payment.expiresAt,
       })
     } catch (err) {
-      if (err instanceof AbacatePayError) {
+      if (err instanceof MercadoPagoError) {
         if (err.status === 429) {
           console.error("[billing] charge status rate limited", {
             route: "POST /api/billing/invoices/:invoiceId/pay/status",
@@ -144,7 +163,7 @@ async function handleStatusCheck(
           message: err.message,
         })
 
-        return failure("ABACATEPAY_ERROR", "Falha ao consultar status da Cobrança PIX.", 502)
+        return failure("MERCADOPAGO_ERROR", "Falha ao consultar status da cobranca PIX.", 502)
       }
 
       throw err
