@@ -4,20 +4,25 @@ import { prisma } from "@/lib/db/prisma"
 import { refreshBarbershopFinancialState } from "@/lib/finance/invoices"
 import { getMercadoPagoPayment, MercadoPagoError, verifyMercadoPagoSignature } from "@/lib/integrations/mercadopago"
 
-function asString(value: unknown) {
-  if (typeof value !== "string") return null
-  const trimmed = value.trim()
-  return trimmed.length > 0 ? trimmed : null
+function asStringOrNumber(value: unknown) {
+  if (typeof value === "string") {
+    const trimmed = value.trim()
+    return trimmed.length > 0 ? trimmed : null
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value)
+  }
+  return null
 }
 
 function extractDataId(payload: Record<string, unknown>) {
   const data = payload.data
   if (data && typeof data === "object") {
-    const id = asString((data as Record<string, unknown>).id)
+    const id = asStringOrNumber((data as Record<string, unknown>).id)
     if (id) return id
   }
 
-  return asString(payload.id)
+  return asStringOrNumber(payload.id)
 }
 
 export async function POST(req: Request) {

@@ -127,7 +127,6 @@ export async function POST(
     if (canReuseStoredCharge(invoice)) {
       return success({
         invoiceId: invoice.id,
-        paymentId: invoice.providerPaymentId,
         qrCodeImageUrl: normalizeQrCodeImage(invoice.providerQrCodeBase64),
         qrCodeCopyPaste: invoice.providerPixCode ?? "",
         pixCode: invoice.providerPixCode ?? "",
@@ -221,7 +220,6 @@ export async function POST(
 
     return success({
       invoiceId: invoice.id,
-      paymentId: payment.id,
       qrCodeImageUrl: normalizeQrCodeImage(payment.qrCodeBase64),
       qrCodeCopyPaste: payment.qrCode,
       pixCode: payment.qrCode,

@@ -91,7 +91,6 @@ type InvoicesData = {
 
 type PayInvoiceData = {
   invoiceId: string
-  paymentId?: string | null
   qrCodeImageUrl: string | null
   qrCodeCopyPaste: string
   pixCode?: string | null
