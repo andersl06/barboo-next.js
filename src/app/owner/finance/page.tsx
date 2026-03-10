@@ -384,6 +384,18 @@ export default function OwnerFinancePage() {
 
   useEffect(() => {
     if (!paymentSession) return
+    if (paymentSession.status !== "PENDING" && paymentSession.status !== "UNKNOWN") return
+    if (isPaymentExpired) return
+
+    const timer = window.setInterval(() => {
+      void checkPaymentStatus(paymentSession.invoiceId)
+    }, 3000)
+
+    return () => window.clearInterval(timer)
+  }, [checkPaymentStatus, isPaymentExpired, paymentSession])
+
+  useEffect(() => {
+    if (!paymentSession) return
     if (paymentSession.status === "PAID" || paymentSession.status === "EXPIRED") return
     if (!isPaymentExpired) return
 
