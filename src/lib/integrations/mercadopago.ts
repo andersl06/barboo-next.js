@@ -61,6 +61,17 @@ function asString(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null
 }
 
+function asStringOrNumber(value: unknown): string | null {
+  if (typeof value === "string") {
+    const trimmed = value.trim()
+    return trimmed.length > 0 ? trimmed : null
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value)
+  }
+  return null
+}
+
 function asNumber(value: unknown): number | null {
   if (typeof value === "number") return Number.isFinite(value) ? value : null
   if (typeof value === "string") {
@@ -79,7 +90,7 @@ function extractTransactionData(payload: Record<string, unknown>) {
 }
 
 function normalizePayment(payload: Record<string, unknown>): MercadoPagoPixPayment {
-  const id = asString(payload.id)
+  const id = asStringOrNumber(payload.id)
   const status = asString(payload.status)
   const amount = asNumber(payload.transaction_amount)
 
