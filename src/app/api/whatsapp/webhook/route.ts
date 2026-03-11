@@ -7,8 +7,51 @@ import {
   dedupeInboundMessages,
   WhatsappInboundMessage,
 } from "@/lib/whatsapp/dedupe"
+import { normalizeWhatsappDigits } from "@/lib/whatsapp/normalize"
+import { sendWhatsappOptInFreeForm, sendWhatsappOptInTemplate } from "@/lib/whatsapp/opt-in"
+import { getWhatsappWindowStatus } from "@/lib/whatsapp/service"
 
 export const runtime = "nodejs"
+const BUSINESS_TIMEZONE = "America/Sao_Paulo"
+const OPT_IN_HINT = "ativar lembretes"
+const OPT_IN_BRAND = "barboo"
+
+function formatDate(value: Date) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeZone: BUSINESS_TIMEZONE,
+  }).format(value)
+}
+
+function formatTime(value: Date) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeStyle: "short",
+    timeZone: BUSINESS_TIMEZONE,
+  }).format(value)
+}
+
+function normalizeText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+function isOptInMessage(text: string) {
+  const normalized = normalizeText(text)
+  return normalized.includes(OPT_IN_HINT) && normalized.includes(OPT_IN_BRAND)
+}
+
+function buildPhoneCandidates(waIdDigits: string) {
+  const cleaned = waIdDigits.replace(/\D/g, "")
+  if (!cleaned) return []
+  if (cleaned.startsWith("55")) {
+    return [cleaned, cleaned.slice(2)]
+  }
+  return [cleaned, `55${cleaned}`]
+}
 
 function extractInboundMessages(payload: unknown): WhatsappInboundMessage[] {
   const entries = Array.isArray((payload as { entry?: unknown })?.entry)
@@ -208,6 +251,81 @@ export async function POST(req: Request) {
   }
 
   const duplicateCount = Math.max(0, allowed.length - created.count)
+
+  const optInTargets = new Map<string, WhatsappInboundMessage>()
+  for (const message of allowed) {
+    if (message.type !== "text") continue
+    if (!message.bodyPreview) continue
+    if (!isOptInMessage(message.bodyPreview)) continue
+    optInTargets.set(message.waId, message)
+  }
+
+  for (const [waId, message] of optInTargets.entries()) {
+    const waIdDigits = normalizeWhatsappDigits(waId)
+    if (!waIdDigits) continue
+
+    const phoneCandidates = buildPhoneCandidates(waIdDigits)
+    if (phoneCandidates.length === 0) continue
+
+    try {
+      const appointment = await prisma.barbershopAppointment.findFirst({
+        where: {
+          clientUser: {
+            phone: {
+              in: phoneCandidates,
+            },
+          },
+          status: {
+            in: ["PENDING"],
+          },
+          startAt: {
+            gt: new Date(),
+          },
+        },
+        orderBy: {
+          startAt: "asc",
+        },
+        select: {
+          id: true,
+          startAt: true,
+          whatsappOptInSentAt: true,
+          clientUser: {
+            select: { name: true },
+          },
+          barbershop: {
+            select: { name: true },
+          },
+        },
+      })
+
+      if (!appointment || appointment.whatsappOptInSentAt) {
+        continue
+      }
+
+      const payload = {
+        waIdDigits,
+        customerName: appointment.clientUser.name,
+        appointmentDate: formatDate(appointment.startAt),
+        appointmentTime: formatTime(appointment.startAt),
+        barbershopName: appointment.barbershop.name,
+      }
+
+      const { windowOpen } = await getWhatsappWindowStatus(waIdDigits)
+      const result = windowOpen
+        ? await sendWhatsappOptInFreeForm(payload)
+        : await sendWhatsappOptInTemplate(payload)
+
+      if (result.sent) {
+        await prisma.barbershopAppointment.update({
+          where: { id: appointment.id },
+          data: { whatsappOptInSentAt: new Date() },
+          select: { id: true },
+        })
+      }
+    } catch (err) {
+      console.warn("Falha ao enviar template de opt-in WhatsApp.", err)
+    }
+  }
 
   return NextResponse.json(
     {

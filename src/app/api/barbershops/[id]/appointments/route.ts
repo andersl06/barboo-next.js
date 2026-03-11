@@ -15,6 +15,7 @@ import { failure, success } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
 import { rateLimit } from "@/lib/security/rate-limit"
 import { createAppointmentSchema } from "@/lib/validators/appointment"
+import { scheduleWhatsappOptInMessage } from "@/lib/whatsapp/opt-in-schedule"
 
 export async function POST(
   req: Request,
@@ -256,6 +257,12 @@ export async function POST(
         409
       )
     }
+
+    void scheduleWhatsappOptInMessage(created.id).then((result) => {
+      if (!result.scheduled && result.reason !== "MISSING_CONFIG") {
+        console.warn("Falha ao agendar opt-in WhatsApp.", result.reason)
+      }
+    })
 
     return success(
       {

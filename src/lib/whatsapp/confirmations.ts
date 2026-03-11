@@ -1,5 +1,6 @@
 import { getWhatsappWindowStatus } from "@/lib/whatsapp/service"
 import { normalizeWhatsappDigits } from "@/lib/whatsapp/normalize"
+import { sendWhatsappGraphMessage } from "@/lib/whatsapp/graph"
 
 export type WhatsappConfirmationInput = {
   waIdDigits: string
@@ -30,41 +31,6 @@ function buildConfirmationMessage(input: WhatsappConfirmationInput) {
   ].join("\n")
 }
 
-function buildGraphUrl() {
-  const version = process.env.WHATSAPP_GRAPH_VERSION ?? "v21.0"
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID
-  return `https://graph.facebook.com/${version}/${phoneNumberId}/messages`
-}
-
-async function sendGraphMessage(body: unknown) {
-  const graphToken = process.env.WHATSAPP_TOKEN
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID
-
-  if (!graphToken || !phoneNumberId) {
-    return { ok: false, errorCode: 0 }
-  }
-
-  const response = await fetch(buildGraphUrl(), {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${graphToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  })
-
-  if (response.ok) {
-    return { ok: true }
-  }
-
-  try {
-    const payload = (await response.json()) as { error?: { code?: number } }
-    return { ok: false, errorCode: payload.error?.code ?? null }
-  } catch {
-    return { ok: false, errorCode: null }
-  }
-}
-
 async function sendTemplateConfirmation(input: WhatsappConfirmationInput) {
   const templateName = process.env.WHATSAPP_CONFIRM_TEMPLATE_NAME
   const templateLang = process.env.WHATSAPP_CONFIRM_TEMPLATE_LANG ?? "pt_BR"
@@ -73,7 +39,7 @@ async function sendTemplateConfirmation(input: WhatsappConfirmationInput) {
     return { ok: false, errorCode: null, mode: "TEMPLATE_REQUIRED" as const }
   }
 
-  const response = await sendGraphMessage({
+  const response = await sendWhatsappGraphMessage({
     messaging_product: "whatsapp",
     to: input.waIdDigits,
     type: "template",
@@ -119,7 +85,7 @@ export async function sendWhatsappAppointmentConfirmation(
   const { windowOpen } = await getWhatsappWindowStatus(waIdDigits)
 
   if (windowOpen) {
-    const response = await sendGraphMessage({
+    const response = await sendWhatsappGraphMessage({
       messaging_product: "whatsapp",
       to: waIdDigits,
       type: "text",
