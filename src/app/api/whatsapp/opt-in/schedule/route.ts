@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client"
 import { verifySignatureAppRouter } from "@upstash/qstash/nextjs"
 import { prisma } from "@/lib/db/prisma"
 import { success } from "@/lib/http/api-response"
@@ -24,34 +25,82 @@ function formatTime(value: Date) {
 
 async function handler(req: Request) {
   try {
-    const payload = (await req.json()) as { appointmentId?: string | null }
+    const rawBody = await req.text()
+    const payload = rawBody
+      ? (JSON.parse(rawBody) as { appointmentId?: string | null })
+      : ({ appointmentId: null } as { appointmentId?: string | null })
     const appointmentId = typeof payload?.appointmentId === "string" ? payload.appointmentId : null
 
     if (!appointmentId) {
       return success({ skipped: true, reason: "MISSING_APPOINTMENT_ID" })
     }
 
-    const appointment = await prisma.barbershopAppointment.findUnique({
-      where: { id: appointmentId },
-      select: {
-        id: true,
-        status: true,
-        startAt: true,
-        whatsappOptInSentAt: true,
-        clientUser: {
-          select: { name: true, phone: true },
+    let supportsOptInSentAt = true
+    let appointment:
+      | {
+          id: string
+          status: "PENDING" | "CONFIRMED" | "CANCELED" | "REJECTED" | "COMPLETED"
+          startAt: Date
+          whatsappOptInSentAt: Date | null
+          clientUser: { name: string; phone: string | null }
+          barbershop: { name: string }
+        }
+      | {
+          id: string
+          status: "PENDING" | "CONFIRMED" | "CANCELED" | "REJECTED" | "COMPLETED"
+          startAt: Date
+          clientUser: { name: string; phone: string | null }
+          barbershop: { name: string }
+        }
+      | null = null
+
+    try {
+      appointment = await prisma.barbershopAppointment.findUnique({
+        where: { id: appointmentId },
+        select: {
+          id: true,
+          status: true,
+          startAt: true,
+          whatsappOptInSentAt: true,
+          clientUser: {
+            select: { name: true, phone: true },
+          },
+          barbershop: {
+            select: { name: true },
+          },
         },
-        barbershop: {
-          select: { name: true },
+      })
+    } catch (err) {
+      const missingColumn =
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2022"
+
+      if (!missingColumn) {
+        throw err
+      }
+
+      supportsOptInSentAt = false
+      appointment = await prisma.barbershopAppointment.findUnique({
+        where: { id: appointmentId },
+        select: {
+          id: true,
+          status: true,
+          startAt: true,
+          clientUser: {
+            select: { name: true, phone: true },
+          },
+          barbershop: {
+            select: { name: true },
+          },
         },
-      },
-    })
+      })
+    }
 
     if (!appointment) {
       return success({ skipped: true, reason: "APPOINTMENT_NOT_FOUND" })
     }
 
-    if (appointment.whatsappOptInSentAt) {
+    if (supportsOptInSentAt && "whatsappOptInSentAt" in appointment && appointment.whatsappOptInSentAt) {
       return success({ skipped: true, reason: "ALREADY_SENT" })
     }
 
@@ -86,10 +135,12 @@ async function handler(req: Request) {
         appointmentId: appointment.id,
         mode: result.mode,
         errorCode: result.errorCode ?? null,
+        errorSubcode: result.errorSubcode ?? null,
+        errorMessage: result.errorMessage ?? null,
       })
     }
 
-    if (result.sent) {
+    if (result.sent && supportsOptInSentAt) {
       await prisma.barbershopAppointment.update({
         where: { id: appointment.id },
         data: { whatsappOptInSentAt: new Date() },
@@ -102,8 +153,11 @@ async function handler(req: Request) {
       sent: result.sent,
       mode: result.mode,
       errorCode: result.errorCode ?? null,
+      errorSubcode: result.errorSubcode ?? null,
+      errorMessage: result.errorMessage ?? null,
     })
   } catch (err) {
+    console.error("[whatsapp] opt-in schedule handler failed", err)
     return handleError(err)
   }
 }

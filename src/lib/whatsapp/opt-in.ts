@@ -13,6 +13,8 @@ export type WhatsappOptInResult = {
   sent: boolean
   mode: "FREE_FORM" | "TEMPLATE" | "TEMPLATE_REQUIRED" | "TEMPLATE_ERROR" | "ERROR"
   errorCode?: number
+  errorSubcode?: number
+  errorMessage?: string
 }
 
 function resolveAppointmentUrl() {
@@ -70,6 +72,8 @@ export async function sendWhatsappOptInFreeForm(
     sent: false,
     mode: "ERROR",
     errorCode: response.errorCode ?? undefined,
+    errorSubcode: response.errorSubcode ?? undefined,
+    errorMessage: response.errorMessage ?? undefined,
   }
 }
 
@@ -114,8 +118,20 @@ export async function sendWhatsappOptInTemplate(
   }
 
   if (response.errorCode === null || response.errorCode === 0) {
-    return { sent: false, mode: "TEMPLATE_ERROR", errorCode: response.errorCode ?? undefined }
+    return {
+      sent: false,
+      mode: "TEMPLATE_ERROR",
+      errorCode: response.errorCode ?? undefined,
+      errorSubcode: response.errorSubcode ?? undefined,
+      errorMessage: response.errorMessage ?? undefined,
+    }
   }
 
-  return { sent: false, mode: "TEMPLATE_ERROR", errorCode: response.errorCode }
+  return {
+    sent: false,
+    mode: "TEMPLATE_ERROR",
+    errorCode: response.errorCode,
+    errorSubcode: response.errorSubcode ?? undefined,
+    errorMessage: response.errorMessage ?? undefined,
+  }
 }

@@ -1,6 +1,9 @@
 export type WhatsappGraphResult = {
   ok: boolean
   errorCode?: number | null
+  errorSubcode?: number | null
+  errorMessage?: string | null
+  errorType?: string | null
 }
 
 function buildGraphUrl() {
@@ -14,7 +17,7 @@ export async function sendWhatsappGraphMessage(body: unknown): Promise<WhatsappG
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID
 
   if (!graphToken || !phoneNumberId) {
-    return { ok: false, errorCode: 0 }
+    return { ok: false, errorCode: 0, errorMessage: "WHATSAPP_TOKEN/WHATSAPP_PHONE_NUMBER_ID ausente" }
   }
 
   const response = await fetch(buildGraphUrl(), {
@@ -31,9 +34,22 @@ export async function sendWhatsappGraphMessage(body: unknown): Promise<WhatsappG
   }
 
   try {
-    const payload = (await response.json()) as { error?: { code?: number } }
-    return { ok: false, errorCode: payload.error?.code ?? null }
+    const payload = (await response.json()) as {
+      error?: {
+        code?: number
+        error_subcode?: number
+        message?: string
+        type?: string
+      }
+    }
+    return {
+      ok: false,
+      errorCode: payload.error?.code ?? null,
+      errorSubcode: payload.error?.error_subcode ?? null,
+      errorMessage: payload.error?.message ?? null,
+      errorType: payload.error?.type ?? null,
+    }
   } catch {
-    return { ok: false, errorCode: null }
+    return { ok: false, errorCode: null, errorMessage: "Falha ao parsear erro da Graph API" }
   }
 }

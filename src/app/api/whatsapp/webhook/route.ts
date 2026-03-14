@@ -268,37 +268,96 @@ export async function POST(req: Request) {
     if (phoneCandidates.length === 0) continue
 
     try {
-      const appointment = await prisma.barbershopAppointment.findFirst({
-        where: {
-          clientUser: {
-            phone: {
-              in: phoneCandidates,
+      let supportsOptInSentAt = true
+      let appointment:
+        | {
+            id: string
+            startAt: Date
+            whatsappOptInSentAt: Date | null
+            clientUser: { name: string }
+            barbershop: { name: string }
+          }
+        | {
+            id: string
+            startAt: Date
+            clientUser: { name: string }
+            barbershop: { name: string }
+          }
+        | null = null
+
+      try {
+        appointment = await prisma.barbershopAppointment.findFirst({
+          where: {
+            clientUser: {
+              phone: {
+                in: phoneCandidates,
+              },
+            },
+            status: {
+              in: ["PENDING"],
+            },
+            startAt: {
+              gt: new Date(),
             },
           },
-          status: {
-            in: ["PENDING"],
+          orderBy: {
+            startAt: "asc",
           },
-          startAt: {
-            gt: new Date(),
+          select: {
+            id: true,
+            startAt: true,
+            whatsappOptInSentAt: true,
+            clientUser: {
+              select: { name: true },
+            },
+            barbershop: {
+              select: { name: true },
+            },
           },
-        },
-        orderBy: {
-          startAt: "asc",
-        },
-        select: {
-          id: true,
-          startAt: true,
-          whatsappOptInSentAt: true,
-          clientUser: {
-            select: { name: true },
-          },
-          barbershop: {
-            select: { name: true },
-          },
-        },
-      })
+        })
+      } catch (err) {
+        const missingColumn =
+          err instanceof Prisma.PrismaClientKnownRequestError &&
+          err.code === "P2022"
+        if (!missingColumn) {
+          throw err
+        }
 
-      if (!appointment || appointment.whatsappOptInSentAt) {
+        supportsOptInSentAt = false
+        appointment = await prisma.barbershopAppointment.findFirst({
+          where: {
+            clientUser: {
+              phone: {
+                in: phoneCandidates,
+              },
+            },
+            status: {
+              in: ["PENDING"],
+            },
+            startAt: {
+              gt: new Date(),
+            },
+          },
+          orderBy: {
+            startAt: "asc",
+          },
+          select: {
+            id: true,
+            startAt: true,
+            clientUser: {
+              select: { name: true },
+            },
+            barbershop: {
+              select: { name: true },
+            },
+          },
+        })
+      }
+
+      if (!appointment) {
+        continue
+      }
+      if (supportsOptInSentAt && "whatsappOptInSentAt" in appointment && appointment.whatsappOptInSentAt) {
         continue
       }
 
@@ -315,7 +374,7 @@ export async function POST(req: Request) {
         ? await sendWhatsappOptInFreeForm(payload)
         : await sendWhatsappOptInTemplate(payload)
 
-      if (result.sent) {
+      if (result.sent && supportsOptInSentAt) {
         await prisma.barbershopAppointment.update({
           where: { id: appointment.id },
           data: { whatsappOptInSentAt: new Date() },
