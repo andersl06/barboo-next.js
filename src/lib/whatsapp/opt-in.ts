@@ -103,10 +103,10 @@ export async function sendWhatsappOptInTemplate(
         {
           type: "body",
           parameters: [
-            { type: "text", text: input.customerName },
-            { type: "text", text: input.appointmentDate },
-            { type: "text", text: input.appointmentTime },
-            { type: "text", text: input.barbershopName },
+            { type: "text", parameter_name: "nome_cliente", text: input.customerName },
+            { type: "text", parameter_name: "data", text: input.appointmentDate },
+            { type: "text", parameter_name: "horario", text: input.appointmentTime },
+            { type: "text", parameter_name: "barbearia", text: input.barbershopName },
           ],
         },
       ],
