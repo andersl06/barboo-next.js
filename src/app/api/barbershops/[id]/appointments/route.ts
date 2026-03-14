@@ -258,11 +258,10 @@ export async function POST(
       )
     }
 
-    void scheduleWhatsappOptInMessage(created.id).then((result) => {
-      if (!result.scheduled && result.reason !== "MISSING_CONFIG") {
-        console.warn("Falha ao agendar opt-in WhatsApp.", result.reason)
-      }
-    })
+    const scheduledOptIn = await scheduleWhatsappOptInMessage(created.id)
+    if (!scheduledOptIn.scheduled) {
+      console.warn("Falha ao agendar opt-in WhatsApp.", scheduledOptIn.reason)
+    }
 
     return success(
       {

@@ -81,6 +81,14 @@ async function handler(req: Request) {
       ? await sendWhatsappOptInFreeForm(payloadData)
       : await sendWhatsappOptInTemplate(payloadData)
 
+    if (!result.sent) {
+      console.warn("Opt-in WhatsApp nao enviado no agendamento automatico.", {
+        appointmentId: appointment.id,
+        mode: result.mode,
+        errorCode: result.errorCode ?? null,
+      })
+    }
+
     if (result.sent) {
       await prisma.barbershopAppointment.update({
         where: { id: appointment.id },
