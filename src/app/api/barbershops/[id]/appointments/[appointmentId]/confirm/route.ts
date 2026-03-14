@@ -8,6 +8,7 @@ import { requireSameOrigin } from "@/lib/http/require-origin"
 import { requireMembership } from "@/lib/membership/require-membership"
 import { sendWhatsappAppointmentConfirmation } from "@/lib/whatsapp/confirmations"
 import { normalizeWhatsappDigits } from "@/lib/whatsapp/normalize"
+import { scheduleWhatsappReminderMessage } from "@/lib/whatsapp/reminder-schedule"
 
 const BUSINESS_TIMEZONE = "America/Sao_Paulo"
 
@@ -23,13 +24,6 @@ function formatTime(value: Date) {
     timeStyle: "short",
     timeZone: BUSINESS_TIMEZONE,
   }).format(value)
-}
-
-function formatCurrency(cents: number) {
-  return (cents / 100).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  })
 }
 
 export async function PATCH(
@@ -109,14 +103,10 @@ export async function PATCH(
       select: {
         id: true,
         startAt: true,
-        totalPriceCents: true,
         clientUser: {
           select: { name: true, phone: true },
         },
-        barberUser: {
-          select: { name: true },
-        },
-        service: {
+        barbershop: {
           select: { name: true },
         },
       },
@@ -131,15 +121,22 @@ export async function PATCH(
         await sendWhatsappAppointmentConfirmation({
           waIdDigits,
           customerName: details.clientUser.name,
-          barberName: details.barberUser.name,
-          serviceName: details.service.name,
           appointmentDate,
           appointmentTime,
-          price: formatCurrency(details.totalPriceCents),
-          appointmentId: details.id,
+          barbershopName: details.barbershop.name,
         })
       } catch (err) {
         console.warn("Falha ao enviar confirmação WhatsApp.", err)
+      }
+    }
+
+    if (details) {
+      const scheduledReminder = await scheduleWhatsappReminderMessage(details.id, details.startAt)
+      if (!scheduledReminder.scheduled) {
+        console.warn("Falha ao agendar lembrete WhatsApp.", {
+          appointmentId: details.id,
+          reason: scheduledReminder.reason ?? "Erro desconhecido",
+        })
       }
     }
 

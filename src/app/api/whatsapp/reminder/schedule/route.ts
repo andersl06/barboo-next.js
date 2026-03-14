@@ -4,13 +4,12 @@ import { prisma } from "@/lib/db/prisma"
 import { success } from "@/lib/http/api-response"
 import { handleError } from "@/lib/http/error-handler"
 import { normalizeWhatsappDigits } from "@/lib/whatsapp/normalize"
-import { sendWhatsappOptInFreeForm, sendWhatsappOptInTemplate } from "@/lib/whatsapp/opt-in"
+import { sendWhatsappReminderFreeForm, sendWhatsappReminderTemplate } from "@/lib/whatsapp/reminder-send"
 import { getWhatsappWindowStatus } from "@/lib/whatsapp/service"
 
 const BUSINESS_TIMEZONE = "America/Sao_Paulo"
-const OPT_IN_HINT = "ativar lembretes"
-const OPT_IN_BRAND = "barboo"
-const FIRST_MINUTE_MS = 60 * 1000
+const REMINDER_LEAD_MS = 15 * 60 * 1000
+const EARLY_TOLERANCE_MS = 30 * 1000
 
 function formatDate(value: Date) {
   return new Intl.DateTimeFormat("pt-BR", {
@@ -26,29 +25,6 @@ function formatTime(value: Date) {
   }).format(value)
 }
 
-function normalizeText(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim()
-}
-
-function isOptInMessage(text: string) {
-  const normalized = normalizeText(text)
-  return normalized.includes(OPT_IN_HINT) && normalized.includes(OPT_IN_BRAND)
-}
-
-function buildWaIdCandidates(value: string) {
-  const cleaned = value.replace(/\D/g, "")
-  if (!cleaned) return []
-  if (cleaned.startsWith("55")) {
-    return [cleaned, cleaned.slice(2)]
-  }
-  return [cleaned, `55${cleaned}`]
-}
-
 async function handler(req: Request) {
   try {
     const rawBody = await req.text()
@@ -61,14 +37,13 @@ async function handler(req: Request) {
       return success({ skipped: true, reason: "MISSING_APPOINTMENT_ID" })
     }
 
-    let supportsOptInSentAt = true
+    let supportsReminderSentAt = true
     let appointment:
       | {
           id: string
           status: "PENDING" | "CONFIRMED" | "CANCELED" | "REJECTED" | "COMPLETED"
           startAt: Date
-          createdAt: Date
-          whatsappOptInSentAt: Date | null
+          whatsappReminderSentAt: Date | null
           clientUser: { name: string; phone: string | null }
           barbershop: { name: string }
         }
@@ -76,7 +51,6 @@ async function handler(req: Request) {
           id: string
           status: "PENDING" | "CONFIRMED" | "CANCELED" | "REJECTED" | "COMPLETED"
           startAt: Date
-          createdAt: Date
           clientUser: { name: string; phone: string | null }
           barbershop: { name: string }
         }
@@ -89,8 +63,7 @@ async function handler(req: Request) {
           id: true,
           status: true,
           startAt: true,
-          createdAt: true,
-          whatsappOptInSentAt: true,
+          whatsappReminderSentAt: true,
           clientUser: {
             select: { name: true, phone: true },
           },
@@ -108,14 +81,13 @@ async function handler(req: Request) {
         throw err
       }
 
-      supportsOptInSentAt = false
+      supportsReminderSentAt = false
       appointment = await prisma.barbershopAppointment.findUnique({
         where: { id: appointmentId },
         select: {
           id: true,
           status: true,
           startAt: true,
-          createdAt: true,
           clientUser: {
             select: { name: true, phone: true },
           },
@@ -130,47 +102,35 @@ async function handler(req: Request) {
       return success({ skipped: true, reason: "APPOINTMENT_NOT_FOUND" })
     }
 
-    if (supportsOptInSentAt && "whatsappOptInSentAt" in appointment && appointment.whatsappOptInSentAt) {
+    if (supportsReminderSentAt && "whatsappReminderSentAt" in appointment && appointment.whatsappReminderSentAt) {
       return success({ skipped: true, reason: "ALREADY_SENT" })
+    }
+
+    if (appointment.status !== "CONFIRMED") {
+      return success({ skipped: true, reason: "STATUS_NOT_CONFIRMED" })
     }
 
     if (!appointment.clientUser.phone) {
       return success({ skipped: true, reason: "MISSING_PHONE" })
     }
 
-    if (appointment.status !== "PENDING") {
-      return success({ skipped: true, reason: "STATUS_NOT_PENDING" })
+    const now = new Date()
+    const msUntilStart = appointment.startAt.getTime() - now.getTime()
+    if (msUntilStart <= 0) {
+      return success({ skipped: true, reason: "STARTED_OR_PAST" })
+    }
+
+    if (msUntilStart > REMINDER_LEAD_MS + EARLY_TOLERANCE_MS) {
+      return success({
+        skipped: true,
+        reason: "TOO_EARLY",
+        secondsUntilReminderWindow: Math.floor((msUntilStart - REMINDER_LEAD_MS) / 1000),
+      })
     }
 
     const waIdDigits = normalizeWhatsappDigits(appointment.clientUser.phone)
     if (!waIdDigits) {
       return success({ skipped: true, reason: "INVALID_PHONE" })
-    }
-
-    const waIdCandidates = buildWaIdCandidates(waIdDigits)
-    const firstMinuteEnd = new Date(appointment.createdAt.getTime() + FIRST_MINUTE_MS)
-    const inboundOptIn = await prisma.whatsAppInboundMessage.findMany({
-      where: {
-        waId: {
-          in: waIdCandidates,
-        },
-        type: "text",
-        receivedAt: {
-          gte: appointment.createdAt,
-          lte: firstMinuteEnd,
-        },
-      },
-      select: {
-        bodyPreview: true,
-      },
-      take: 10,
-      orderBy: {
-        receivedAt: "desc",
-      },
-    })
-
-    if (inboundOptIn.some((item) => item.bodyPreview && isOptInMessage(item.bodyPreview))) {
-      return success({ skipped: true, reason: "OPTIN_ALREADY_RECEIVED_IN_FIRST_MINUTE" })
     }
 
     const payloadData = {
@@ -183,11 +143,11 @@ async function handler(req: Request) {
 
     const { windowOpen } = await getWhatsappWindowStatus(waIdDigits)
     const result = windowOpen
-      ? await sendWhatsappOptInFreeForm(payloadData)
-      : await sendWhatsappOptInTemplate(payloadData)
+      ? await sendWhatsappReminderFreeForm(payloadData)
+      : await sendWhatsappReminderTemplate(payloadData)
 
     if (!result.sent) {
-      console.warn("Opt-in WhatsApp nao enviado no agendamento automatico.", {
+      console.warn("Lembrete WhatsApp nao enviado.", {
         appointmentId: appointment.id,
         mode: result.mode,
         errorCode: result.errorCode ?? null,
@@ -196,10 +156,10 @@ async function handler(req: Request) {
       })
     }
 
-    if (result.sent && supportsOptInSentAt) {
+    if (result.sent && supportsReminderSentAt) {
       await prisma.barbershopAppointment.update({
         where: { id: appointment.id },
-        data: { whatsappOptInSentAt: new Date() },
+        data: { whatsappReminderSentAt: new Date() },
         select: { id: true },
       })
     }
@@ -213,7 +173,7 @@ async function handler(req: Request) {
       errorMessage: result.errorMessage ?? null,
     })
   } catch (err) {
-    console.error("[whatsapp] opt-in schedule handler failed", err)
+    console.error("[whatsapp] reminder schedule handler failed", err)
     return handleError(err)
   }
 }

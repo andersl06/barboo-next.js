@@ -215,6 +215,7 @@ model BarbershopAppointment {
   cancelReason     String?           @db.VarChar(300)
   rejectedAt       DateTime?
   whatsappOptInSentAt DateTime?
+  whatsappReminderSentAt DateTime?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 

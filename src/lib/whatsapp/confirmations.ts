@@ -5,38 +5,54 @@ import { sendWhatsappGraphMessage } from "@/lib/whatsapp/graph"
 export type WhatsappConfirmationInput = {
   waIdDigits: string
   customerName: string
-  barberName: string
-  serviceName: string
   appointmentDate: string
   appointmentTime: string
-  price: string
-  appointmentId: string
+  barbershopName: string
 }
 
 export type WhatsappConfirmationResult = {
   sent: boolean
   mode: "FREE_FORM" | "TEMPLATE" | "TEMPLATE_REQUIRED" | "TEMPLATE_ERROR" | "ERROR"
   errorCode?: number
+  errorSubcode?: number
+  errorMessage?: string
 }
 
 function buildConfirmationMessage(input: WhatsappConfirmationInput) {
+  const appUrl = process.env.APP_URL?.trim()
+  const appointmentUrl = appUrl ? `${appUrl.replace(/\/+$/, "")}/cliente/agendamentos` : null
+
   return [
-    `Olá, ${input.customerName}.`,
-    "Seu compromisso foi confirmado.",
-    `Barbeiro: ${input.barberName}`,
-    `Serviço: ${input.serviceName}`,
+    `Ola ${input.customerName}.`,
+    "",
+    "Seu horario foi confirmado com sucesso.",
+    "",
     `Data: ${input.appointmentDate}`,
-    `Horário: ${input.appointmentTime}`,
-    `Valor: ${input.price}`
+    `Horario: ${input.appointmentTime}`,
+    `Barbearia: ${input.barbershopName}`,
+    "",
+    "Voce pode consultar mais detalhes sobre o seu agendamento aqui:",
+    ...(appointmentUrl ? [appointmentUrl] : []),
   ].join("\n")
 }
 
 async function sendTemplateConfirmation(input: WhatsappConfirmationInput) {
-  const templateName = process.env.WHATSAPP_CONFIRM_TEMPLATE_NAME
-  const templateLang = process.env.WHATSAPP_CONFIRM_TEMPLATE_LANG ?? "pt_BR"
+  const templateName =
+    process.env.WHATSAPP_BARBER_CONFIRM_TEMPLATE_NAME ??
+    process.env.WHATSAPP_CONFIRM_TEMPLATE_NAME
+  const templateLang =
+    process.env.WHATSAPP_BARBER_CONFIRM_TEMPLATE_LANG ??
+    process.env.WHATSAPP_CONFIRM_TEMPLATE_LANG ??
+    "pt_BR"
 
   if (!templateName) {
-    return { ok: false, errorCode: null, mode: "TEMPLATE_REQUIRED" as const }
+    return {
+      ok: false,
+      mode: "TEMPLATE_REQUIRED" as const,
+      errorCode: null,
+      errorSubcode: null,
+      errorMessage: null,
+    }
   }
 
   const response = await sendWhatsappGraphMessage({
@@ -50,13 +66,10 @@ async function sendTemplateConfirmation(input: WhatsappConfirmationInput) {
         {
           type: "body",
           parameters: [
-            { type: "text", text: input.customerName },
-            { type: "text", text: input.barberName },
-            { type: "text", text: input.serviceName },
-            { type: "text", text: input.appointmentDate },
-            { type: "text", text: input.appointmentTime },
-            { type: "text", text: input.price },
-            { type: "text", text: input.appointmentId },
+            { type: "text", parameter_name: "nome_cliente", text: input.customerName },
+            { type: "text", parameter_name: "data", text: input.appointmentDate },
+            { type: "text", parameter_name: "horario", text: input.appointmentTime },
+            { type: "text", parameter_name: "barbearia", text: input.barbershopName },
           ],
         },
       ],
@@ -67,11 +80,13 @@ async function sendTemplateConfirmation(input: WhatsappConfirmationInput) {
     return { ok: true, mode: "TEMPLATE" as const }
   }
 
-  if (response.errorCode === null || response.errorCode === 0) {
-    return { ok: false, errorCode: response.errorCode ?? undefined, mode: "TEMPLATE_ERROR" as const }
+  return {
+    ok: false,
+    mode: "TEMPLATE_ERROR" as const,
+    errorCode: response.errorCode ?? undefined,
+    errorSubcode: response.errorSubcode ?? undefined,
+    errorMessage: response.errorMessage ?? undefined,
   }
-
-  return { ok: false, errorCode: response.errorCode, mode: "TEMPLATE_ERROR" as const }
 }
 
 export async function sendWhatsappAppointmentConfirmation(
@@ -100,7 +115,13 @@ export async function sendWhatsappAppointmentConfirmation(
     }
 
     if (response.errorCode !== 131047) {
-      return { sent: false, mode: "ERROR", errorCode: response.errorCode ?? undefined }
+      return {
+        sent: false,
+        mode: "ERROR",
+        errorCode: response.errorCode ?? undefined,
+        errorSubcode: response.errorSubcode ?? undefined,
+        errorMessage: response.errorMessage ?? undefined,
+      }
     }
   }
 
@@ -117,5 +138,7 @@ export async function sendWhatsappAppointmentConfirmation(
     sent: false,
     mode: templateResult.mode,
     errorCode: templateResult.errorCode ?? undefined,
+    errorSubcode: templateResult.errorSubcode ?? undefined,
+    errorMessage: templateResult.errorMessage ?? undefined,
   }
 }
